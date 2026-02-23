@@ -1,0 +1,1 @@
+import{y as a}from"./index.js";const o=(t=0,e=20,s={})=>a.get("/datasource/search",{params:{page:t,pageSize:e,...s}}),u=t=>a.post("/datasource/add",t),c=t=>a.delete(`/datasource/delete/${t}`),d=t=>a.get(`/datasource/detail/${t}`),n=t=>a.put("/datasource/update",t),l=()=>a.get("/datasource/list");export{u as a,d as b,c as d,o as g,l,n as u};
