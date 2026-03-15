@@ -30,3 +30,21 @@ spring:
 jwt:
   secret: "my-super-secret-key-for-shiro-jwt-integration-must-be-long-enough" # 至少 32 字符
   expiration: 3600000 # 1 小时
+
+# Resilience4j 配置
+resilience4j:
+  ratelimiter:
+    instances:
+      apiRateLimiter:
+        limit-for-period: 2000 # 每秒允许的请求数
+        limit-refresh-period: 1s # 刷新周期
+        timeout-duration: 2000ms # 获取令牌的超时时间
+  circuitbreaker:
+    instances:
+      apiCircuitBreaker:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 100 # 滑动窗口大小
+        failure-rate-threshold: 50 # 失败率阈值，超过则熔断
+        wait-duration-in-open-state: 5s # 熔断后等待时间
+        permitted-number-of-calls-in-half-open-state: 10 # 半开状态允许的调用数
+        automatic-transition-from-open-to-half-open-enabled: true # 自动从熔断到半开状态

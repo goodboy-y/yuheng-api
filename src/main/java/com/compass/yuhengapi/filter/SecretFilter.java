@@ -31,6 +31,11 @@ public class SecretFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        if (!request.getServletPath().startsWith("/api/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String clientId = request.getHeader("clientId");
         String secret = request.getHeader("secret");
         List<ApiClient> apiClients = apiClientRepository.findByClientId(clientId);
