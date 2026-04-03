@@ -4,6 +4,7 @@ package com.compass.yuhengapi.controller;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
+import com.compass.yuhengapi.common.util.ExcelUtils;
 import com.compass.yuhengapi.common.util.IpUtils;
 import com.compass.yuhengapi.common.util.PageList;
 import com.compass.yuhengapi.common.util.Result;
@@ -11,18 +12,18 @@ import com.compass.yuhengapi.model.bean.ApiParam;
 import com.compass.yuhengapi.model.dto.ApiConfigQueryCmd;
 import com.compass.yuhengapi.model.entities.ApiConfig;
 import com.compass.yuhengapi.service.ApiConfigService;
-import com.compass.yuhengapi.service.ApiDataSourceService;
 import com.compass.yuhengapi.service.ApiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -34,7 +35,6 @@ import java.util.Map;
 public class ApiConfigController {
 
     private final ApiConfigService apiConfigService;
-    private final ApiDataSourceService apiDataSourceService;
     private final ApiService apiService;
 
     @RequestMapping("/search")
@@ -96,7 +96,7 @@ public class ApiConfigController {
         String post = HttpUtil.post(url, map);
         return JSON.parseObject(post);
     }
-    
+
     /**
      * 测试API接口
      */
@@ -107,6 +107,51 @@ public class ApiConfigController {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return Result.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * 导出API测试数据
+     */
+    @PostMapping("/export/{apiId}")
+    public ResponseEntity<byte[]> exportTestData(@PathVariable("apiId") String apiId, @RequestBody Map<String, Object> params) {
+        try {
+            // 执行测试API获取数据
+            Result<Object> result = apiService.testApi(apiId, params);
+
+            // 获取API配置信息用于文件名
+            ApiConfig config = apiConfigService.detail(apiId);
+            if (config == null) {
+                throw new RuntimeException("该接口不存在！！");
+            }
+
+            // 处理Excel导出
+            if (result.getData() instanceof List) {
+                List<Map<String, Object>> dataList = (List<Map<String, Object>>) result.getData();
+                if (CollectionUtils.isEmpty(dataList)) {
+                    throw new RuntimeException("没有可导出的数据");
+                }
+                byte[] excelBytes = ExcelUtils.exportExcel("Sheet1", dataList);
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+                // 允许前端访问Content-Disposition响应头
+                headers.setAccessControlExposeHeaders(List.of("Content-Disposition"));
+
+                String fileName = config.getName() + "_" + System.currentTimeMillis() + ".xlsx";
+                String encodedFileName = URLEncoder.encode(fileName, StandardCharsets.UTF_8)
+                    .replace("+", "%20");
+                headers.setContentDispositionFormData("attachment", encodedFileName);
+                return ResponseEntity.ok().headers(headers).body(excelBytes);
+            } else {
+                throw new RuntimeException("没有可导出的数据");
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            // 如果导出失败，返回错误信息
+            return ResponseEntity.status(500)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(JSON.toJSONBytes(Result.fail(e.getMessage())));
         }
     }
 

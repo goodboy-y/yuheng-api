@@ -50,3 +50,9 @@ export const updateApi = (data: ApiData) => {
 export const testApi = (apiId: string, params: Record<string, any>) => {
   return request.post<ApiResponse<any>>(`/apiConfig/test/${apiId}`, params)
 }
+
+export const exportApiTestData = (apiId: string, params: Record<string, any>) => {
+  return request.post(`/apiConfig/export/${apiId}`, params, {
+    responseType: 'blob'
+  })
+}

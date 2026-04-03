@@ -83,6 +83,7 @@
       <template #footer>
         <el-button @click="testDialogVisible = false">关闭</el-button>
         <el-button type="primary" @click="handleTestSubmit" :loading="testLoading">执行测试</el-button>
+        <el-button type="success" @click="handleExport" :loading="exportLoading">导出数据</el-button>
       </template>
     </el-dialog>
   </div>
@@ -103,6 +104,7 @@ import {
   getApiDetail,
   updateApi,
   testApi,
+  exportApiTestData,
   type ApiData,
   type ApiSqlParam
 } from '../api/api'
@@ -206,6 +208,7 @@ const testApiData = ref<ApiData | null>(null)
 const testParams = ref<Record<string, any>>({})
 const testResult = ref<any>(null)
 const testLoading = ref(false)
+const exportLoading = ref(false)
 
 const rules: FormRules = {
   name: [{ required: true, message: '请输入API名称', trigger: 'blur' }],
@@ -353,6 +356,45 @@ const handleTestSubmit = async () => {
     ElMessage.error('测试失败：' + (error.response?.data?.message || error.message || '未知错误'))
   } finally {
     testLoading.value = false
+  }
+}
+
+const handleExport = async () => {
+  if (!testApiData.value) return
+  
+  exportLoading.value = true
+  
+  try {
+    const response = await exportApiTestData(testApiData.value.id, testParams.value)
+    
+    // 处理blob响应
+    const blob = response.data
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    
+    // 从响应头中获取文件名
+    const contentDisposition = response.headers['content-disposition']
+    let fileName = 'api_test_data.xlsx'
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="([^"]+)"/)
+      if (match && match[1]) {
+        fileName = decodeURIComponent(match[1])
+      }
+    }
+    
+    link.setAttribute('download', fileName)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    
+    ElMessage.success('导出成功')
+  } catch (error: any) {
+    console.error('导出失败:', error)
+    ElMessage.error('导出失败：' + (error.response?.data?.message || error.message || '未知错误'))
+  } finally {
+    exportLoading.value = false
   }
 }
 
