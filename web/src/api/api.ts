@@ -46,3 +46,7 @@ export const getApiDetail = (id: string) => {
 export const updateApi = (data: ApiData) => {
   return request.put<ApiResponse<any>>('/apiConfig/update', data)
 }
+
+export const testApi = (apiId: string, params: Record<string, any>) => {
+  return request.post<ApiResponse<any>>(`/apiConfig/test/${apiId}`, params)
+}

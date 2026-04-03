@@ -1,8 +1,8 @@
 <template>
   <div class="api-container">
     <PaginatedTable title="API管理" :columns="columns" :search-fields="searchFields" :table-data="apiList"
-      :loading="loading" :total="total" :current-page="currentPage" :page-size="pageSize" :show-test="false"
-      @add="handleAdd" @view="handleView" @edit="handleEdit" @delete="handleDelete" @update:page="handlePageChange"
+      :loading="loading" :total="total" :current-page="currentPage" :page-size="pageSize" :show-test="true"
+      @add="handleAdd" @view="handleView" @edit="handleEdit" @delete="handleDelete" @test="handleTest" @update:page="handlePageChange"
       @search="handleSearch" @reset="handleReset" />
 
     <el-dialog v-model="dialogVisible" :title="dialogTitle" :fullscreen="true" @close="handleDialogClose">
@@ -52,12 +52,45 @@
         <el-button @click="detailDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+    
+    <!-- 测试API对话框 -->
+    <el-dialog v-model="testDialogVisible" title="测试API" width="800px">
+      <div v-if="testApiData" class="test-api-container">
+        <div class="test-api-info">
+          <h4>API信息</h4>
+          <p><strong>名称:</strong> {{ testApiData.name }}</p>
+          <p><strong>路径:</strong> {{ testApiData.path }}</p>
+          <p><strong>SQL:</strong> <pre>{{ testApiData.sqlParam.sql }}</pre></p>
+        </div>
+        
+        <el-form v-if="testApiData.sqlParam.params && testApiData.sqlParam.params.length > 0" :model="testParams" label-width="100px" class="test-form">
+          <h4>参数设置</h4>
+          <el-form-item v-for="param in testApiData.sqlParam.params" :key="param.name" :label="(param.name || '').split(':')[0]" :prop="(param.name || '').split(':')[0] as string">
+            <el-input 
+              v-model="testParams[(param.name || '').split(':')[0] as string]" 
+              :placeholder="`请输入${(param.name || '').split(':')[0]}`"
+              :type="param.type === 'number' ? 'number' : 'text'"
+            />
+          </el-form-item>
+        </el-form>
+        
+        <div v-if="testResult" class="test-result">
+          <h4>测试结果</h4>
+          <pre>{{ JSON.stringify(testResult, null, 2) }}</pre>
+        </div>
+      </div>
+      
+      <template #footer>
+        <el-button @click="testDialogVisible = false">关闭</el-button>
+        <el-button type="primary" @click="handleTestSubmit" :loading="testLoading">执行测试</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElDialog, ElForm, ElFormItem, ElInput, ElButton } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { Codemirror } from 'vue-codemirror'
 import { sql } from '@codemirror/lang-sql'
@@ -69,6 +102,7 @@ import {
   deleteApi,
   getApiDetail,
   updateApi,
+  testApi,
   type ApiData,
   type ApiSqlParam
 } from '../api/api'
@@ -165,6 +199,13 @@ const detailData = ref<ApiData>({
   },
   status: 1
 })
+
+// 测试API相关变量
+const testDialogVisible = ref(false)
+const testApiData = ref<ApiData | null>(null)
+const testParams = ref<Record<string, any>>({})
+const testResult = ref<any>(null)
+const testLoading = ref(false)
 
 const rules: FormRules = {
   name: [{ required: true, message: '请输入API名称', trigger: 'blur' }],
@@ -276,6 +317,45 @@ const handleDelete = async (row: ApiData) => {
   }
 }
 
+const handleTest = async (row: ApiData) => {
+  try {
+    const response = await getApiDetail(row.id)
+    if (response.data && response.data.data) {
+      testApiData.value = response.data.data
+      testParams.value = {}
+      testResult.value = null
+      testDialogVisible.value = true
+    } else {
+      ElMessage.error('获取API详情失败')
+    }
+  } catch (error) {
+    console.error('获取API详情失败:', error)
+    ElMessage.error('获取API详情失败')
+  }
+}
+
+const handleTestSubmit = async () => {
+  if (!testApiData.value) return
+  
+  testLoading.value = true
+  testResult.value = null
+  
+  try {
+    const response = await testApi(testApiData.value.id, testParams.value)
+    if (response.data && response.data.data) {
+      testResult.value = response.data.data
+      ElMessage.success('测试成功')
+    } else {
+      ElMessage.error('测试失败：' + (response.data?.message || '未知错误'))
+    }
+  } catch (error: any) {
+    console.error('测试API失败:', error)
+    ElMessage.error('测试失败：' + (error.response?.data?.message || error.message || '未知错误'))
+  } finally {
+    testLoading.value = false
+  }
+}
+
 const handlePageChange = (page: number, size: number) => {
   currentPage.value = page
   pageSize.value = size
@@ -350,5 +430,63 @@ onMounted(() => {
 
 .CodeMirror {
   width: 100%;
+}
+
+.test-api-container {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.test-api-info {
+  margin-bottom: 20px;
+  padding: 15px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.test-api-info h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.test-api-info pre {
+  background-color: #fff;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #e4e7ed;
+  overflow-x: auto;
+  max-height: 200px;
+}
+
+.test-form {
+  margin-bottom: 20px;
+}
+
+.test-form h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+.test-result {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.test-result h4 {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.test-result pre {
+  background-color: #fff;
+  padding: 10px;
+  border-radius: 4px;
+  border: 1px solid #e4e7ed;
+  overflow-x: auto;
+  max-height: 300px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
 }
 </style>

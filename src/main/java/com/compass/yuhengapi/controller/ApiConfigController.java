@@ -11,10 +11,14 @@ import com.compass.yuhengapi.model.bean.ApiParam;
 import com.compass.yuhengapi.model.dto.ApiConfigQueryCmd;
 import com.compass.yuhengapi.model.entities.ApiConfig;
 import com.compass.yuhengapi.service.ApiConfigService;
+import com.compass.yuhengapi.service.ApiDataSourceService;
+import com.compass.yuhengapi.service.ApiService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,11 +29,13 @@ import java.util.Map;
 
 @RestController
 @Slf4j
+@RequiredArgsConstructor
 @RequestMapping("/apiConfig")
 public class ApiConfigController {
 
-    @Autowired
-    ApiConfigService apiConfigService;
+    private final ApiConfigService apiConfigService;
+    private final ApiDataSourceService apiDataSourceService;
+    private final ApiService apiService;
 
     @RequestMapping("/search")
     public Result<PageList<ApiConfig>> search(ApiConfigQueryCmd queryCmd) {
@@ -89,6 +95,19 @@ public class ApiConfigController {
         Map<String, Object> map = JSON.parseObject(params, Map.class);
         String post = HttpUtil.post(url, map);
         return JSON.parseObject(post);
+    }
+    
+    /**
+     * 测试API接口
+     */
+    @PostMapping("/test/{apiId}")
+    public Result<Object> testApi(@PathVariable("apiId") String apiId, @RequestBody Map<String, Object> params) {
+        try {
+            return apiService.testApi(apiId, params);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            return Result.fail(e.getMessage());
+        }
     }
 
 }

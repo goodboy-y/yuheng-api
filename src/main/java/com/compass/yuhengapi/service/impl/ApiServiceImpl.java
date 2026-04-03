@@ -11,10 +11,13 @@ import com.compass.yuhengapi.common.util.Result;
 import com.compass.yuhengapi.model.bean.ApiSql;
 import com.compass.yuhengapi.model.entities.ApiConfig;
 import com.compass.yuhengapi.model.entities.ApiDatasource;
+import com.compass.yuhengapi.service.ApiConfigService;
+import com.compass.yuhengapi.service.ApiDataSourceService;
 import com.compass.yuhengapi.service.ApiService;
 import com.compass.yuhengapi.util.JdbcUtil;
 import com.compass.yuhengapi.util.PoolManager;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -24,50 +27,56 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class ApiServiceImpl implements ApiService {
+    
+    private final ApiConfigService apiConfigService;
+    private final ApiDataSourceService apiDataSourceService;
 
     @Override
     public Result<Object> executeSql(HttpServletRequest request, ApiConfig config, ApiDatasource datasource) {
-        ApiSql apiSql = buildSql(request, config);
+        ApiSql apiSql = buildSqlFromRequest(request, config);
         if (apiSql == null) {
             return Result.custom(ReturnCodeEnum.RC400.getCode(), ReturnCodeEnum.RC400.getMessage(), null);
         }
-        try (DruidPooledConnection connection = PoolManager.getPooledConnection(datasource)) {
-            ResultSet rs = JdbcUtil.query(apiSql.sql(), connection, apiSql.params());
-            int columnCount = rs.getMetaData().getColumnCount();
-            List<String> columns = new ArrayList<>();
-            for (int i = 1; i <= columnCount; i++) {
-                String columnName = rs.getMetaData().getColumnLabel(i);
-                columns.add(columnName);
+        return executeSql(apiSql, datasource);
+    }
+
+    @Override
+    public Result<Object> testApi(String apiId, Map<String, Object> params) {
+        try {
+            // 获取API配置
+            ApiConfig config = apiConfigService.detail(apiId);
+            if (config == null) {
+                return Result.fail("该接口不存在！！");
             }
-            List<JSONObject> list = new ArrayList<>();
-            while (rs.next()) {
-                JSONObject jo = new JSONObject();
-                columns.forEach(t -> {
-                    try {
-                        Object value = rs.getObject(t);
-                        jo.put(StrUtil.toCamelCase(t.toLowerCase()), value);
-                    } catch (SQLException e) {
-                        log.error(ExceptionUtils.getStackTrace(e));
-                    }
-                });
-                list.add(jo);
+            
+            // 获取数据源配置
+            ApiDatasource datasource = apiDataSourceService.detail(config.getDatasource().getId());
+            if (datasource == null) {
+                return Result.fail("数据源不存在！！");
             }
-            return Result.success(list);
-        } catch (SQLException e) {
-            log.error(ExceptionUtils.getStackTrace(e));
-        } catch (APIException e) {
+            
+            // 构建SQL
+            ApiSql apiSql = buildSqlFromParams(params, config);
+            if (apiSql == null) {
+                return Result.custom(ReturnCodeEnum.RC400.getCode(), ReturnCodeEnum.RC400.getMessage(), null);
+            }
+            
+            // 执行SQL
+            return executeSql(apiSql, datasource);
+        } catch (Exception e) {
             log.error(ExceptionUtils.getStackTrace(e));
             return Result.fail(e.getMessage());
         }
-        return Result.fail();
     }
 
-    private ApiSql buildSql(HttpServletRequest request, ApiConfig config) {
+    private ApiSql buildSqlFromRequest(HttpServletRequest request, ApiConfig config) {
         JSONObject jsonObject = JSON.parseObject(config.getSql_param());
         String sql = jsonObject.getString("sql");
         JSONArray requestParams = jsonObject.getJSONArray("params");
@@ -94,6 +103,71 @@ public class ApiServiceImpl implements ApiService {
             }
         }
         return new ApiSql(sql, params);
+    }
+    
+    private ApiSql buildSqlFromParams(Map<String, Object> params, ApiConfig config) {
+        JSONObject jsonObject = JSON.parseObject(config.getSql_param());
+        String sql = jsonObject.getString("sql");
+        JSONArray requestParams = jsonObject.getJSONArray("params");
+        if (requestParams == null) {
+            return new ApiSql(sql, new Object[]{});
+        }
+        Object[] sqlParams = new Object[requestParams.size()];
+        for (int i = 0; i < requestParams.size(); i++) {
+            JSONObject jo = requestParams.getJSONObject(i);
+            String name = jo.getString("name");
+            String type = jo.getString("type");
+            String old = "#{" + name + "}";
+            sql = sql.replace(old, "?");
+            
+            // 获取参数值
+            Object value = params.get(StringUtils.substringBefore(name, ":"));
+            if (value == null) {
+                return null;
+            }
+            
+            // 转换参数类型
+            if ("int".equals(type)) {
+                sqlParams[i] = Long.parseLong(value.toString());
+            } else if ("double".equals(type)) {
+                sqlParams[i] = Double.parseDouble(value.toString());
+            } else {
+                sqlParams[i] = value.toString();
+            }
+        }
+        return new ApiSql(sql, sqlParams);
+    }
+    
+    private Result<Object> executeSql(ApiSql apiSql, ApiDatasource datasource) {
+        try (DruidPooledConnection connection = PoolManager.getPooledConnection(datasource)) {
+            ResultSet rs = JdbcUtil.query(apiSql.sql(), connection, apiSql.params());
+            int columnCount = rs.getMetaData().getColumnCount();
+            List<String> columns = new ArrayList<>();
+            for (int i = 1; i <= columnCount; i++) {
+                String columnName = rs.getMetaData().getColumnLabel(i);
+                columns.add(columnName);
+            }
+            List<JSONObject> list = new ArrayList<>();
+            while (rs.next()) {
+                JSONObject jo = new JSONObject();
+                columns.forEach(t -> {
+                    try {
+                        Object value = rs.getObject(t);
+                        jo.put(StrUtil.toCamelCase(t.toLowerCase()), value);
+                    } catch (SQLException e) {
+                        log.error(ExceptionUtils.getStackTrace(e));
+                    }
+                });
+                list.add(jo);
+            }
+            return Result.success(list);
+        } catch (SQLException e) {
+            log.error(ExceptionUtils.getStackTrace(e));
+            return Result.fail(e.getMessage());
+        } catch (APIException e) {
+            log.error(ExceptionUtils.getStackTrace(e));
+            return Result.fail(e.getMessage());
+        }
     }
 
 }
