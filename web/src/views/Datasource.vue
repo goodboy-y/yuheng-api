@@ -54,6 +54,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button type="success" @click="handleTestConnection" :loading="testLoading">测试连接</el-button>
         <el-button type="primary" @click="handleSubmit" :loading="submitLoading">确定</el-button>
       </template>
     </el-dialog>
@@ -89,6 +90,7 @@ import {
   deleteDatasource,
   getDatasourceDetail,
   updateDatasource,
+  testDatasourceConnection,
   type Datasource
 } from '../api/datasource'
 
@@ -122,6 +124,7 @@ const dialogVisible = ref(false)
 const detailDialogVisible = ref(false)
 const dialogTitle = ref('')
 const submitLoading = ref(false)
+const testLoading = ref(false)
 const formRef = ref<FormInstance>()
 const currentPage = ref(0)
 const pageSize = ref(20)
@@ -236,8 +239,60 @@ const handleEdit = async (row: Datasource) => {
   }
 }
 
-const handleTest = (_row: Datasource) => {
-  ElMessage.success('测试连接成功')
+const handleTest = async (row: Datasource) => {
+  testLoading.value = true
+  try {
+    // 获取数据源详情
+    const response = await getDatasourceDetail(row.id)
+    if (response.data) {
+      const datasource = response.data.data
+      // 测试连接
+      const testResponse = await testDatasourceConnection(datasource)
+      console.log('测试连接响应:', testResponse)
+      if (testResponse.data && testResponse.data.code === 200) {
+        ElMessage.success(testResponse.data.data || '测试连接成功')
+      } else {
+        ElMessage.error(testResponse.data.message || '测试连接失败')
+      }
+    } else {
+      ElMessage.error('获取数据源信息失败')
+    }
+  } catch (error: any) {
+    console.error('测试连接失败:', error)
+    ElMessage.error('测试连接失败：' + (error.response?.data?.message || error.message || '未知错误'))
+  } finally {
+    testLoading.value = false
+  }
+}
+
+const handleTestConnection = async () => {
+  if (!formRef.value) return
+  
+  testLoading.value = true
+  try {
+    // 验证必要的字段
+    await formRef.value.validateField(['name', 'type', 'url', 'username', 'password'])
+    
+    // 使用表单数据测试连接
+    const testResponse = await testDatasourceConnection(formData.value)
+    console.log('测试连接响应:', testResponse)
+    if (testResponse.data && testResponse.data.code === 200) {
+      ElMessage.success(testResponse.data.data || '测试连接成功')
+    } else {
+      ElMessage.error(testResponse.data.message || '测试连接失败')
+    }
+  } catch (error: any) {
+    console.error('测试连接失败:', error)
+    // 如果是验证错误，Element Plus会自动显示错误信息，不需要额外处理
+    if (error.response) {
+      ElMessage.error('测试连接失败：' + (error.response.data?.message || '未知错误'))
+    } else if (error.message && !error.message.includes('Validation failed')) {
+      // 避免重复显示Element Plus的验证错误信息
+      ElMessage.error('测试连接失败：' + error.message)
+    }
+  } finally {
+    testLoading.value = false
+  }
 }
 
 const handleDelete = async (row: Datasource) => {

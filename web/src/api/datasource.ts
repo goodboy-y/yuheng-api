@@ -37,3 +37,7 @@ export const updateDatasource = (data: Datasource) => {
 export const listDatasource = () => {
   return request.get<ApiResponse<Array<Datasource>>>('/datasource/list')
 }
+
+export const testDatasourceConnection = (data: Partial<Datasource>) => {
+  return request.post<ApiResponse<string>>('/datasource/connect', data)
+}
