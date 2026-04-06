@@ -5,11 +5,15 @@ import cn.hutool.json.JSONUtil;
 import com.compass.yuhengapi.common.enumerate.ReturnCodeEnum;
 import com.compass.yuhengapi.common.util.Result;
 import com.compass.yuhengapi.model.entities.ApiClient;
+import com.compass.yuhengapi.model.entities.ApiConfig;
 import com.compass.yuhengapi.repo.ApiClientRepository;
+import com.compass.yuhengapi.repo.ApiConfigRepository;
+import com.compass.yuhengapi.service.ApiConfigAccessService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -21,13 +25,12 @@ import java.util.List;
 
 @Slf4j
 @SuppressWarnings("all")
-public class SecretFilter extends OncePerRequestFilter {
+@RequiredArgsConstructor
+public class ApiSecretFilter extends OncePerRequestFilter {
 
     private final ApiClientRepository apiClientRepository;
-
-    public SecretFilter(ApiClientRepository apiClientRepository) {
-        this.apiClientRepository = apiClientRepository;
-    }
+    private final ApiConfigRepository apiConfigRepository;
+    private final ApiConfigAccessService apiConfigAccessService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -42,6 +45,28 @@ public class SecretFilter extends OncePerRequestFilter {
         if (!apiClients.isEmpty()) {
             ApiClient apiClient = apiClients.get(0);
             if (apiClient.getSecret().equals(secret)) {
+                // 验证客户端是否有权限访问该API
+                String apiPath = request.getServletPath();
+                ApiConfig apiConfig = apiConfigRepository.selectByPath(apiPath);
+                
+                if (apiConfig != null) {
+                    boolean hasAccess = apiConfigAccessService.hasAccess(apiClient.getId(), apiConfig.getId());
+                    if (!hasAccess) {
+                        try {
+                            response.setCharacterEncoding(StandardCharsets.UTF_8.toString());
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            JakartaServletUtil.write(response,
+                                JSONUtil.toJsonStr(Result.custom(ReturnCodeEnum.ACCESS_DENIED.getCode(), "未授权访问此API", null)),
+                                MediaType.APPLICATION_JSON_VALUE
+                            );
+                            return;
+                        } catch (Exception e) {
+                            log.error("写入响应时发生未知异常: httpStatus={}, result={}", HttpStatus.OK.value(), "", e);
+                            return;
+                        }
+                    }
+                }
+                
                 // 符合条件放行
                 filterChain.doFilter(request, response);
                 return;

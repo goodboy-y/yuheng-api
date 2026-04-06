@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { House, DataBoard, Connection, Monitor } from '@element-plus/icons-vue'
+import { House, DataBoard, Connection, Monitor, Key } from '@element-plus/icons-vue'
 
 export const useMenuStore = defineStore('menu', {
   state: () => ({
@@ -35,6 +35,14 @@ export const useMenuStore = defineStore('menu', {
         meta: {
           title: '连接客户端管理',
           icon: Monitor
+        }
+      },
+      {
+        path: '/api-config-access',
+        name: 'ApiConfigAccess',
+        meta: {
+          title: 'API授权管理',
+          icon: Key
         }
       }
     ]

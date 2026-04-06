@@ -50,6 +50,15 @@ const routes: RouteRecordRaw[] = [
       title: '连接客户端管理',
       icon: 'Monitor'
     }
+  },
+  {
+    path: '/api-config-access',
+    name: 'ApiConfigAccess',
+    component: () => import('../views/ApiConfigAccess.vue'),
+    meta: {
+      title: 'API授权管理',
+      icon: 'Key'
+    }
   }
 ]
 
