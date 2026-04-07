@@ -45,8 +45,8 @@ public class ApiSecretFilter extends OncePerRequestFilter {
         if (!apiClients.isEmpty()) {
             ApiClient apiClient = apiClients.get(0);
             if (apiClient.getSecret().equals(secret)) {
-                // 验证客户端是否有权限访问该API
-                String apiPath = request.getServletPath();
+                // 验证客户端是否有权限访问该API,去掉"/api/"字符
+                String apiPath = request.getServletPath().substring(5);
                 ApiConfig apiConfig = apiConfigRepository.selectByPath(apiPath);
                 
                 if (apiConfig != null) {
