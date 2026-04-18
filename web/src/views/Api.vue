@@ -39,6 +39,9 @@
             <el-button type="primary" @click="handleAddMappingInForm" size="small" style="margin-bottom: 10px;">
               添加映射
             </el-button>
+            <el-button type="success" @click="handleParseSqlFields" :loading="parseLoading" size="small" style="margin-bottom: 10px; margin-left: 10px;" :disabled="!formData.datasourceId || !formData.sqlParam.sql">
+              自动解析
+            </el-button>
 
             <el-table :data="formData.fieldMappings" border style="width: 100%" max-height="300">
               <el-table-column prop="fieldName" label="原始字段名" width="200">
@@ -138,6 +141,7 @@ import {
   exportApiTestData,
   getFieldMappings,
   saveFieldMappings,
+  parseSqlFields,
   type ApiData,
   type ApiSqlParam,
   type ApiFieldMapping
@@ -246,6 +250,7 @@ const testParams = ref<Record<string, any>>({})
 const testResult = ref<any>(null)
 const testLoading = ref(false)
 const exportLoading = ref(false)
+const parseLoading = ref(false)
 
 const rules: FormRules = {
   name: [{ required: true, message: '请输入API名称', trigger: 'blur' }],
@@ -472,6 +477,34 @@ const handleRemoveMappingInForm = (index: number) => {
   formData.value.fieldMappings.splice(index, 1)
 }
 
+const handleParseSqlFields = async () => {
+  if (!formData.value.datasourceId || !formData.value.sqlParam.sql) {
+    ElMessage.warning('请先选择数据源并填写SQL语句')
+    return
+  }
+
+  parseLoading.value = true
+  try {
+    const response = await parseSqlFields(formData.value.datasourceId, formData.value.sqlParam.sql)
+    if (response.data && response.data.data && response.data.data.length > 0) {
+      const fields = response.data.data
+      formData.value.fieldMappings = fields.map((field: string) => ({
+        apiConfigId: formData.value.id || '',
+        fieldName: field,
+        displayName: field
+      }))
+      ElMessage.success(`成功解析${fields.length}个字段`)
+    } else {
+      ElMessage.warning('未解析到任何字段')
+    }
+  } catch (error: any) {
+    console.error('解析SQL字段失败:', error)
+    ElMessage.error('解析SQL字段失败：' + (error.response?.data?.message || error.message || '未知错误'))
+  } finally {
+    parseLoading.value = false
+  }
+}
+
 const handleSubmit = async () => {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
@@ -503,7 +536,7 @@ const handleSubmit = async () => {
         if (isNewApi) {
           // 新增API
           const result = await addApi(submitData as Omit<ApiData, 'id'>)
-          const apiId = result.data?.data || result.data?.id
+          const apiId = result.data?.data
           
           // 保存字段映射
           if (apiId && fieldMappings && fieldMappings.length > 0) {

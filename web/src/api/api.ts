@@ -71,3 +71,9 @@ export const getFieldMappings = (apiConfigId: string) => {
 export const saveFieldMappings = (apiConfigId: string, mappings: ApiFieldMapping[]) => {
   return request.post<ApiResponse<any>>(`/apiConfig/field-mapping/${apiConfigId}`, mappings)
 }
+
+export const parseSqlFields = (datasourceId: string, sql: string) => {
+  return request.get<ApiResponse<string[]>>('/apiConfig/parse-sql-fields', {
+    params: { datasourceId, sql }
+  })
+}

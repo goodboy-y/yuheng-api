@@ -57,6 +57,11 @@ public class ApiConfigController {
         return Result.success(apiConfigService.getRequestParam(sql));
     }
 
+    @RequestMapping("/parse-sql-fields")
+    public Result<List<String>> parseSqlFields(String datasourceId, String sql) {
+        return apiService.parseSqlFields(datasourceId, sql);
+    }
+
     @RequestMapping("/detail/{id}")
     public Result<ApiConfig> detail(@PathVariable("id") String id) {
         return Result.success(apiConfigService.detail(id));

@@ -56,4 +56,19 @@ public class PoolManager {
         return pool.getConnection();
     }
 
+    public static void removePool(String datasourceId) {
+        lock.lock();
+        try {
+            DruidDataSource pool = map.remove(datasourceId);
+            if (pool != null) {
+                pool.close();
+                log.info("注销连接池成功：{}", datasourceId);
+            }
+        } catch (Exception e) {
+            log.error("注销连接池失败：{}", datasourceId, e);
+        } finally {
+            lock.unlock();
+        }
+    }
+
 }

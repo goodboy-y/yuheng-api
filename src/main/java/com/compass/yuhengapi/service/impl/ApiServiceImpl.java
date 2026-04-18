@@ -170,4 +170,55 @@ public class ApiServiceImpl implements ApiService {
         }
     }
 
+    @Override
+    public Result<List<String>> parseSqlFields(String datasourceId, String sql) {
+        try {
+            ApiDatasource datasource = apiDataSourceService.detail(datasourceId);
+            if (datasource == null) {
+                return Result.fail("数据源不存在");
+            }
+
+            // 获取一个连接来获取元数据，不实际执行查询
+            try (DruidPooledConnection connection = PoolManager.getPooledConnection(datasource)) {
+                // 使用 Druid 的 Util 来获取查询的元数据信息
+                // 将 SQL 包装成 SELECT * FROM (...) AS t WHERE 1=0 的形式来获取字段信息
+                String wrappedSql = wrapSqlForMetadata(sql);
+                ResultSet rs = JdbcUtil.query(wrappedSql, connection, new Object[]{});
+                java.sql.ResultSetMetaData metaData = rs.getMetaData();
+                List<String> columns = new ArrayList<>();
+                for (int i = 1; i <= metaData.getColumnCount(); i++) {
+                    columns.add(StrUtil.toCamelCase(metaData.getColumnLabel(i)));
+                }
+                return Result.success(columns);
+            }
+        } catch (SQLException e) {
+            log.error(ExceptionUtils.getStackTrace(e));
+            return Result.fail("解析SQL字段失败：" + e.getMessage());
+        } catch (APIException e) {
+            log.error(ExceptionUtils.getStackTrace(e));
+            return Result.fail("解析SQL字段失败：" + e.getMessage());
+        }
+    }
+
+    private String wrapSqlForMetadata(String sql) {
+        // 移除末尾的分号
+        sql = sql.trim();
+        if (sql.endsWith(";")) {
+            sql = sql.substring(0, sql.length() - 1);
+        }
+
+        // 如果 SQL 包含参数占位符，替换为默认值或 1=1 条件
+        // 由于我们只需要获取字段信息，不需要实际执行，所以使用 1=0 条件不返回任何数据
+        sql = sql.replaceAll("#\\{[^}]+}", "1");
+
+        // 添加 1=0 条件，确保不返回实际数据，只获取字段信息
+        if (sql.toLowerCase().contains("where")) {
+            sql = sql + " AND 1=0";
+        } else {
+            sql = sql + " WHERE 1=0";
+        }
+
+        return sql;
+    }
+
 }
