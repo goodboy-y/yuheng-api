@@ -5,6 +5,8 @@ import com.compass.yuhengapi.common.util.ExcelUtils;
 import com.compass.yuhengapi.common.util.Result;
 import com.compass.yuhengapi.model.entities.ApiConfig;
 import com.compass.yuhengapi.model.entities.ApiDatasource;
+import com.compass.yuhengapi.model.entities.ApiFieldMapping;
+import com.compass.yuhengapi.repo.ApiFieldMappingRepository;
 import com.compass.yuhengapi.service.ApiConfigService;
 import com.compass.yuhengapi.service.ApiDataSourceService;
 import com.compass.yuhengapi.service.ApiService;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +45,9 @@ public class ApiController {
 
     @Autowired
     private ApiService apiService;
+
+    @Autowired
+    private ApiFieldMappingRepository fieldMappingRepository;
 
     @RequestMapping("/{path}")
     @RateLimiter(name = "apiRateLimiter", fallbackMethod = "rateLimitFallback")
@@ -94,7 +100,18 @@ public class ApiController {
             // 处理Excel导出
             if (result.getData() instanceof List) {
                 List<Map<String, Object>> dataList = (List<Map<String, Object>>) result.getData();
-                byte[] excelBytes = ExcelUtils.exportExcel("API数据导出", dataList);
+
+                // 获取字段映射配置
+                List<ApiFieldMapping> fieldMappings = fieldMappingRepository.findByApiConfigId(config.getId());
+                Map<String, String> headerMapping = null;
+                if (fieldMappings != null && !fieldMappings.isEmpty()) {
+                    headerMapping = new HashMap<>();
+                    for (ApiFieldMapping mapping : fieldMappings) {
+                        headerMapping.put(mapping.getFieldName(), mapping.getDisplayName());
+                    }
+                }
+
+                byte[] excelBytes = ExcelUtils.exportExcelWithHeaders("API数据导出", dataList, headerMapping);
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));

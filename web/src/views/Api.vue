@@ -31,6 +31,38 @@
         <el-form-item label="备注" prop="note">
           <el-input v-model="formData.note" type="textarea" placeholder="请输入备注"></el-input>
         </el-form-item>
+
+        <!-- 字段映射配置 -->
+        <el-divider content-position="left">字段映射配置</el-divider>
+        <el-form-item label="字段映射">
+          <div class="field-mapping-section">
+            <el-button type="primary" @click="handleAddMappingInForm" size="small" style="margin-bottom: 10px;">
+              添加映射
+            </el-button>
+
+            <el-table :data="formData.fieldMappings" border style="width: 100%" max-height="300">
+              <el-table-column prop="fieldName" label="原始字段名" width="200">
+                <template #default="{ row }">
+                  <el-input v-model="row.fieldName" placeholder="如：name" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="displayName" label="显示名称">
+                <template #default="{ row }">
+                  <el-input v-model="row.displayName" placeholder="如：姓名" />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="100">
+                <template #default="{ $index }">
+                  <el-button type="danger" size="small" @click="handleRemoveMappingInForm($index)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+
+            <div v-if="formData.fieldMappings.length === 0" class="empty-tip">
+              暂无字段映射配置，导出Excel时将使用原始字段名
+            </div>
+          </div>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -40,7 +72,6 @@
 
     <el-dialog v-model="detailDialogVisible" title="API详情" width="600px">
       <el-descriptions :column="1" border>
-        <!-- <el-descriptions-item label="ID">{{ detailData.id }}</el-descriptions-item> -->
         <el-descriptions-item label="API名称">{{ detailData.name }}</el-descriptions-item>
         <el-descriptions-item label="路径">{{ detailData.path }}</el-descriptions-item>
         <el-descriptions-item label="数据源">{{ detailData.datasource.name }}</el-descriptions-item>
@@ -91,7 +122,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, ElDialog, ElForm, ElFormItem, ElInput, ElButton } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { Codemirror } from 'vue-codemirror'
 import { sql } from '@codemirror/lang-sql'
@@ -105,13 +136,15 @@ import {
   updateApi,
   testApi,
   exportApiTestData,
+  getFieldMappings,
+  saveFieldMappings,
   type ApiData,
-  type ApiSqlParam
+  type ApiSqlParam,
+  type ApiFieldMapping
 } from '../api/api'
 import { listDatasource, type Datasource } from '../api/datasource'
 
 const columns = [
-  // { prop: 'id', label: 'ID', width: 80 },
   { prop: 'name', label: 'API名称' },
   { prop: 'path', label: '路径' },
   {
@@ -160,6 +193,7 @@ const searchParams = ref<Record<string, any>>({
   name: '',
   status: ''
 })
+
 interface FormData {
   id?: string
   name: string
@@ -172,6 +206,7 @@ interface FormData {
     sql: string
     params: ApiSqlParam[]
   }
+  fieldMappings: ApiFieldMapping[]
 }
 
 const formData = ref<FormData>({
@@ -183,8 +218,10 @@ const formData = ref<FormData>({
   sqlParam: {
     sql: '',
     params: [] as ApiSqlParam[]
-  }
+  },
+  fieldMappings: []
 })
+
 const detailData = ref<ApiData>({
   id: '',
   name: '',
@@ -214,7 +251,6 @@ const rules: FormRules = {
   name: [{ required: true, message: '请输入API名称', trigger: 'blur' }],
   path: [{ required: true, message: '请输入路径', trigger: 'blur' }],
   datasourceId: [{ required: true, message: '请输入数据源ID', trigger: 'blur' }],
-  // sql_param: [{ required: true, message: '请输入SQL参数', trigger: 'blur' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 }
 
@@ -258,7 +294,8 @@ const handleAdd = () => {
       sql: '',
       params: [] as ApiSqlParam[]
     },
-    note: ''
+    note: '',
+    fieldMappings: []
   }
   dialogVisible.value = true
 }
@@ -290,9 +327,15 @@ const handleEdit = async (row: ApiData) => {
       if (data.datasource) {
         data.datasourceId = data.datasource.id
       }
-      formData.value = data
+      formData.value = {
+        ...data,
+        fieldMappings: []
+      }
       dialogTitle.value = '修改API'
       dialogVisible.value = true
+
+      // 加载字段映射配置
+      loadFieldMappings(data.id)
     } else {
       console.error('API响应数据格式不正确:', response)
       ElMessage.error('获取API详情失败：数据格式不正确')
@@ -404,12 +447,39 @@ const handlePageChange = (page: number, size: number) => {
   fetchList()
 }
 
+// 加载字段映射
+const loadFieldMappings = async (apiConfigId: string) => {
+  try {
+    const response = await getFieldMappings(apiConfigId)
+    if (response.data && response.data.data) {
+      formData.value.fieldMappings = response.data.data
+    }
+  } catch (error) {
+    console.error('获取字段映射失败:', error)
+  }
+}
+
+// 在表单中添加字段映射
+const handleAddMappingInForm = () => {
+  formData.value.fieldMappings.push({
+    apiConfigId: formData.value.id || '',
+    fieldName: '',
+    displayName: ''
+  })
+}
+
+const handleRemoveMappingInForm = (index: number) => {
+  formData.value.fieldMappings.splice(index, 1)
+}
+
 const handleSubmit = async () => {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
     if (valid) {
       submitLoading.value = true
       try {
+        const isNewApi = !formData.value.id
+        
         // 准备提交数据
         const submitData: any = { ...formData.value }
 
@@ -425,18 +495,42 @@ const handleSubmit = async () => {
           delete submitData.datasourceId
         }
         submitData.sql_param = JSON.stringify(formData.value.sqlParam)
-        console.log('提交数据:', submitData)
+        
+        // 移除fieldMappings，不随API配置一起提交
+        const fieldMappings = submitData.fieldMappings
+        delete submitData.fieldMappings
 
-        if (formData.value.id) {
-          await updateApi(submitData as ApiData)
-          ElMessage.success('修改成功')
-        } else {
-          await addApi(submitData as Omit<ApiData, 'id'>)
+        if (isNewApi) {
+          // 新增API
+          const result = await addApi(submitData as Omit<ApiData, 'id'>)
+          const apiId = result.data?.data || result.data?.id
+          
+          // 保存字段映射
+          if (apiId && fieldMappings && fieldMappings.length > 0) {
+            const mappingsWithId = fieldMappings.map((m: ApiFieldMapping) => ({
+              ...m,
+              apiConfigId: apiId
+            }))
+            await saveFieldMappings(apiId, mappingsWithId)
+          }
+          
           ElMessage.success('新增成功')
+        } else {
+          // 更新API
+          await updateApi(submitData as ApiData)
+          
+          // 保存字段映射
+          if (fieldMappings) {
+            await saveFieldMappings(formData.value.id!, fieldMappings)
+          }
+          
+          ElMessage.success('修改成功')
         }
+        
         dialogVisible.value = false
         fetchList()
       } catch (error) {
+        console.error('提交失败:', error)
         ElMessage.error(formData.value.id ? '修改失败' : '新增失败')
       } finally {
         submitLoading.value = false
@@ -530,5 +624,16 @@ onMounted(() => {
   max-height: 300px;
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+.field-mapping-section {
+  width: 100%;
+}
+
+.empty-tip {
+  text-align: center;
+  padding: 20px;
+  color: #909399;
+  font-size: 14px;
 }
 </style>

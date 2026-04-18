@@ -56,3 +56,18 @@ export const exportApiTestData = (apiId: string, params: Record<string, any>) =>
     responseType: 'blob'
   })
 }
+
+export interface ApiFieldMapping {
+  id?: string
+  apiConfigId: string
+  fieldName: string
+  displayName: string
+}
+
+export const getFieldMappings = (apiConfigId: string) => {
+  return request.get<ApiResponse<ApiFieldMapping[]>>(`/apiConfig/field-mapping/${apiConfigId}`)
+}
+
+export const saveFieldMappings = (apiConfigId: string, mappings: ApiFieldMapping[]) => {
+  return request.post<ApiResponse<any>>(`/apiConfig/field-mapping/${apiConfigId}`, mappings)
+}

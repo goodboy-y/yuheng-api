@@ -11,6 +11,8 @@ import com.compass.yuhengapi.common.util.Result;
 import com.compass.yuhengapi.model.bean.ApiParam;
 import com.compass.yuhengapi.model.dto.ApiConfigQueryCmd;
 import com.compass.yuhengapi.model.entities.ApiConfig;
+import com.compass.yuhengapi.model.entities.ApiFieldMapping;
+import com.compass.yuhengapi.repo.ApiFieldMappingRepository;
 import com.compass.yuhengapi.service.ApiConfigService;
 import com.compass.yuhengapi.service.ApiService;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +39,7 @@ public class ApiConfigController {
 
     private final ApiConfigService apiConfigService;
     private final ApiService apiService;
+    private final ApiFieldMappingRepository fieldMappingRepository;
 
     @RequestMapping("/search")
     public Result<PageList<ApiConfig>> search(ApiConfigQueryCmd queryCmd) {
@@ -131,7 +135,18 @@ public class ApiConfigController {
                 if (CollectionUtils.isEmpty(dataList)) {
                     throw new RuntimeException("没有可导出的数据");
                 }
-                byte[] excelBytes = ExcelUtils.exportExcel("Sheet1", dataList);
+
+                // 获取字段映射配置
+                List<ApiFieldMapping> fieldMappings = fieldMappingRepository.findByApiConfigId(apiId);
+                Map<String, String> headerMapping = null;
+                if (fieldMappings != null && !fieldMappings.isEmpty()) {
+                    headerMapping = new HashMap<>();
+                    for (ApiFieldMapping mapping : fieldMappings) {
+                        headerMapping.put(mapping.getFieldName(), mapping.getDisplayName());
+                    }
+                }
+
+                byte[] excelBytes = ExcelUtils.exportExcelWithHeaders("Sheet1", dataList, headerMapping);
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));

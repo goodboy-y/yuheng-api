@@ -16,7 +16,7 @@ spring:
   #    password: ${SPRING_DATASOURCE_PASSWORD:123456}
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
-    url: ${SPRING_DATASOURCE_URL:jdbc:oracle:thin:@xixi.vip:1521/orclpdb1}
+    url: ${SPRING_DATASOURCE_URL:jdbc:oracle:thin:@172.17.0.1:1521/orclpdb1}
     username: ${SPRING_DATASOURCE_USERNAME:eams_dev}
     password: ${SPRING_DATASOURCE_PASSWORD:eams}
     driver-class-name: oracle.jdbc.OracleDriver
