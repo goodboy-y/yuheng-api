@@ -144,14 +144,19 @@ public class ApiConfigController {
                 // 获取字段映射配置
                 List<ApiFieldMapping> fieldMappings = fieldMappingRepository.findByApiConfigId(apiId);
                 Map<String, String> headerMapping = null;
+                Map<String, Integer> columnWidthMapping = null;
                 if (fieldMappings != null && !fieldMappings.isEmpty()) {
                     headerMapping = new HashMap<>();
+                    columnWidthMapping = new HashMap<>();
                     for (ApiFieldMapping mapping : fieldMappings) {
                         headerMapping.put(mapping.getFieldName(), mapping.getDisplayName());
+                        if (mapping.getColumnWidth() != null) {
+                            columnWidthMapping.put(mapping.getFieldName(), mapping.getColumnWidth());
+                        }
                     }
                 }
 
-                byte[] excelBytes = ExcelUtils.exportExcelWithHeaders("Sheet1", dataList, headerMapping);
+                byte[] excelBytes = ExcelUtils.exportExcelWithHeaders("Sheet1", dataList, headerMapping, columnWidthMapping);
 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));

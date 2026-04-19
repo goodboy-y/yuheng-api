@@ -32,8 +32,8 @@
           <el-input v-model="formData.note" type="textarea" placeholder="请输入备注"></el-input>
         </el-form-item>
 
-        <!-- 字段映射配置 -->
-        <el-divider content-position="left">字段映射配置</el-divider>
+        <!-- 导出字段映射配置 -->
+        <el-divider content-position="left">导出字段映射配置</el-divider>
         <el-form-item label="字段映射">
           <div class="field-mapping-section">
             <el-button type="primary" @click="handleAddMappingInForm" size="small" style="margin-bottom: 10px;">
@@ -52,6 +52,11 @@
               <el-table-column prop="displayName" label="显示名称">
                 <template #default="{ row }">
                   <el-input v-model="row.displayName" placeholder="如：姓名" />
+                </template>
+              </el-table-column>
+              <el-table-column prop="columnWidth" label="列宽" width="150">
+                <template #default="{ row }">
+                  <el-input v-model.number="row.columnWidth" type="number" placeholder="不填则按显示名称字数" min="1" />
                 </template>
               </el-table-column>
               <el-table-column label="操作" width="100">
@@ -469,7 +474,8 @@ const handleAddMappingInForm = () => {
   formData.value.fieldMappings.push({
     apiConfigId: formData.value.id || '',
     fieldName: '',
-    displayName: ''
+    displayName: '',
+    columnWidth: undefined
   })
 }
 
@@ -491,7 +497,8 @@ const handleParseSqlFields = async () => {
       formData.value.fieldMappings = fields.map((field: string) => ({
         apiConfigId: formData.value.id || '',
         fieldName: field,
-        displayName: field
+        displayName: field,
+        columnWidth: undefined
       }))
       ElMessage.success(`成功解析${fields.length}个字段`)
     } else {

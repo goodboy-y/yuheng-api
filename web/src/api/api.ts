@@ -62,6 +62,7 @@ export interface ApiFieldMapping {
   apiConfigId: string
   fieldName: string
   displayName: string
+  columnWidth?: number
 }
 
 export const getFieldMappings = (apiConfigId: string) => {

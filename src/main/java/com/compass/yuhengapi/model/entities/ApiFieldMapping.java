@@ -25,4 +25,7 @@ public class ApiFieldMapping {
     @Column(name = "display_name", nullable = false, length = 200)
     private String displayName;
 
+    @Column(name = "column_width")
+    private Integer columnWidth;
+
 }

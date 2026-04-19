@@ -25,6 +25,17 @@ public class ExcelUtils {
      * @param headerMapping 字段映射，key为原始字段名，value为显示名称。如果为null则使用原始字段名
      */
     public static byte[] exportExcelWithHeaders(String sheetName, List<Map<String, Object>> dataList, Map<String, String> headerMapping) throws IOException {
+        return exportExcelWithHeaders(sheetName, dataList, headerMapping, null);
+    }
+
+    /**
+     * 导出Excel（支持自定义表头和列宽）
+     * @param sheetName 工作表名称
+     * @param dataList 数据列表
+     * @param headerMapping 字段映射，key为原始字段名，value为显示名称。如果为null则使用原始字段名
+     * @param columnWidthMapping 列宽映射，key为原始字段名，value为列宽。如果为null或未设置，则根据显示名称字数计算列宽
+     */
+    public static byte[] exportExcelWithHeaders(String sheetName, List<Map<String, Object>> dataList, Map<String, String> headerMapping, Map<String, Integer> columnWidthMapping) throws IOException {
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             // 创建工作表
             Sheet sheet = workbook.createSheet(sheetName);
@@ -85,9 +96,30 @@ public class ExcelUtils {
                 rowIndex++;
             }
             
-            // 自动调整列宽
-            for (int i = 0; i < fieldHeaders.size(); i++) {
-                sheet.autoSizeColumn(i);
+            // 设置列宽
+            colIndex = 0;
+            for (Map.Entry<String, String> fieldEntry : fieldHeaders.entrySet()) {
+                String fieldName = fieldEntry.getKey();
+                String displayName = fieldEntry.getValue();
+                
+                if (columnWidthMapping != null && columnWidthMapping.containsKey(fieldName)) {
+                    // 使用配置的列宽
+                    sheet.setColumnWidth(colIndex, columnWidthMapping.get(fieldName) * 256);
+                } else {
+                    // 根据显示名称字数计算列宽，每个汉字占用2个字符宽度，每个字母/数字占用1个字符宽度
+                    int charCount = 0;
+                    for (char c : displayName.toCharArray()) {
+                        if (c >= 0x4e00 && c <= 0x9fa5) {
+                            charCount += 2;
+                        } else {
+                            charCount += 1;
+                        }
+                    }
+                    // 最小宽度为10，最大宽度为50
+                    int width = Math.max(10, Math.min(50, charCount + 2));
+                    sheet.setColumnWidth(colIndex, width * 256);
+                }
+                colIndex++;
             }
             
             workbook.write(outputStream);
