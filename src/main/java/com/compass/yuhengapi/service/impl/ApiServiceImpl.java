@@ -187,7 +187,7 @@ public class ApiServiceImpl implements ApiService {
                 java.sql.ResultSetMetaData metaData = rs.getMetaData();
                 List<String> columns = new ArrayList<>();
                 for (int i = 1; i <= metaData.getColumnCount(); i++) {
-                    columns.add(StrUtil.toCamelCase(metaData.getColumnLabel(i)));
+                    columns.add(StrUtil.toCamelCase(metaData.getColumnLabel(i).toLowerCase()));
                 }
                 return Result.success(columns);
             }

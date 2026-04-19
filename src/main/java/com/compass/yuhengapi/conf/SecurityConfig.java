@@ -1,12 +1,13 @@
 package com.compass.yuhengapi.conf;
 
-import com.compass.yuhengapi.filter.JwtFilter;
 import com.compass.yuhengapi.filter.ApiSecretFilter;
+import com.compass.yuhengapi.filter.JwtFilter;
 import com.compass.yuhengapi.model.entities.ApiAccount;
 import com.compass.yuhengapi.repo.ApiAccountRepository;
 import com.compass.yuhengapi.repo.ApiClientRepository;
 import com.compass.yuhengapi.repo.ApiConfigRepository;
 import com.compass.yuhengapi.service.ApiConfigAccessService;
+import com.compass.yuhengapi.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,6 +35,7 @@ public class SecurityConfig {
     private final ApiClientRepository apiClientRepository;
     private final ApiConfigRepository apiConfigRepository;
     private final ApiConfigAccessService apiConfigAccessService;
+    private final JwtUtil jwtUtil;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) {
@@ -58,7 +60,7 @@ public class SecurityConfig {
 
     @Bean
     public JwtFilter jwtFilter() {
-        return new JwtFilter(userDetailsService());
+        return new JwtFilter(userDetailsService(), jwtUtil);
     }
 
     @Bean
