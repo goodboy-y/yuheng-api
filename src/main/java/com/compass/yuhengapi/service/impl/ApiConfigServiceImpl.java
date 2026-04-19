@@ -7,6 +7,7 @@ import com.compass.yuhengapi.model.bean.SqlParam;
 import com.compass.yuhengapi.model.dto.ApiConfigQueryCmd;
 import com.compass.yuhengapi.model.entities.ApiConfig;
 import com.compass.yuhengapi.repo.ApiConfigRepository;
+import com.compass.yuhengapi.repo.ApiFieldMappingRepository;
 import com.compass.yuhengapi.service.ApiConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,19 +31,9 @@ import java.util.regex.Pattern;
 public class ApiConfigServiceImpl implements ApiConfigService {
 
     private final ApiConfigRepository apiConfigRepository;
+    private final ApiFieldMappingRepository fieldMappingRepository;
 
     private final Pattern pattern = Pattern.compile("#\\{([^}]*)}");
-
-    @Transactional
-    public void add(ApiConfig apiConfig) {
-        int size = apiConfigRepository.selectCountByPath(apiConfig.getPath());
-        if (size > 0) {
-            throw new RuntimeException("该路径已被使用，请修改请求路径再保存");
-        } else {
-            parseParams(apiConfig);
-            apiConfigRepository.save(apiConfig);
-        }
-    }
 
     private void parseParams(ApiConfig apiConfig) {
         String sqlParam = apiConfig.getSql_param();
@@ -85,25 +76,16 @@ public class ApiConfigServiceImpl implements ApiConfigService {
     }
 
     @Transactional
-    public void update(ApiConfig apiConfig) {
-        int size = apiConfigRepository.selectCountByPathWhenUpdate(apiConfig.getPath(), apiConfig.getId());
-        if (size > 0) {
-            throw new RuntimeException("该路径已被使用，请修改请求路径再保存");
-        } else {
-            parseParams(apiConfig);
-            apiConfigRepository.save(apiConfig);
-        }
-    }
-
-    @Transactional
     public void delete(String id) {
         apiConfigRepository.deleteById(id);
     }
 
+    @Override
     public ApiConfig detail(String id) {
         return apiConfigRepository.findById(id).orElse(null);
     }
 
+    @Override
     public PageList<ApiConfig> search(ApiConfigQueryCmd queryCmd) {
         Specification<ApiConfig> spec = Specification.unrestricted();
 
@@ -122,6 +104,7 @@ public class ApiConfigServiceImpl implements ApiConfigService {
         return PageList.of(all, pageable);
     }
 
+    @Override
     public ApiConfig getConfig(String path) {
         return apiConfigRepository.selectByPath(path);
     }
@@ -144,6 +127,59 @@ public class ApiConfigServiceImpl implements ApiConfigService {
         }
         apiConfig.setStatus(0);
         apiConfigRepository.save(apiConfig);
+    }
+
+    @Transactional
+    @Override
+    public String addWithMappings(ApiConfig apiConfig, List<com.compass.yuhengapi.model.entities.ApiFieldMapping> fieldMappings) {
+        int size = apiConfigRepository.selectCountByPath(apiConfig.getPath());
+        if (size > 0) {
+            throw new RuntimeException("该路径已被使用，请修改请求路径再保存");
+        } else {
+            parseParams(apiConfig);
+            apiConfigRepository.save(apiConfig);
+            
+            // 保存字段映射
+            saveFieldMappings(apiConfig.getId(), fieldMappings);
+            
+            return apiConfig.getId();
+        }
+    }
+
+    @Transactional
+    @Override
+    public void updateWithMappings(ApiConfig apiConfig, List<com.compass.yuhengapi.model.entities.ApiFieldMapping> fieldMappings) {
+        int size = apiConfigRepository.selectCountByPathWhenUpdate(apiConfig.getPath(), apiConfig.getId());
+        if (size > 0) {
+            throw new RuntimeException("该路径已被使用，请修改请求路径再保存");
+        } else {
+            parseParams(apiConfig);
+            apiConfigRepository.save(apiConfig);
+            
+            // 保存字段映射
+            saveFieldMappings(apiConfig.getId(), fieldMappings);
+        }
+    }
+
+    /**
+     * 保存字段映射配置
+     */
+    private void saveFieldMappings(String apiConfigId, List<com.compass.yuhengapi.model.entities.ApiFieldMapping> fieldMappings) {
+        if (fieldMappings != null && !fieldMappings.isEmpty()) {
+            // 先删除旧的映射配置
+            fieldMappingRepository.deleteByApiConfigId(apiConfigId);
+            
+            // 保存新的映射配置
+            for (com.compass.yuhengapi.model.entities.ApiFieldMapping mapping : fieldMappings) {
+                mapping.setId(null);
+                mapping.setApiConfigId(apiConfigId);
+            }
+            
+            fieldMappingRepository.saveAll(fieldMappings);
+        } else {
+            // 如果没有字段映射，则删除所有旧的映射
+            fieldMappingRepository.deleteByApiConfigId(apiConfigId);
+        }
     }
 
 }

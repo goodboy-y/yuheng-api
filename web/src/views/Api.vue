@@ -102,9 +102,9 @@
           <p><strong>SQL:</strong> <pre>{{ testApiData.sqlParam.sql }}</pre></p>
         </div>
         
-        <el-form v-if="testApiData.sqlParam.params && testApiData.sqlParam.params.length > 0" :model="testParams" label-width="100px" class="test-form">
+        <el-form v-if="testApiData.sqlParam.params && testApiData.sqlParam.params.length > 0" ref="testFormRef" :model="testParams" label-width="100px" class="test-form">
           <h4>参数设置</h4>
-          <el-form-item v-for="param in testApiData.sqlParam.params" :key="param.name" :label="(param.name || '').split(':')[0]" :prop="(param.name || '').split(':')[0] as string">
+          <el-form-item v-for="param in testApiData.sqlParam.params" :key="param.name" :label="(param.name || '').split(':')[0] as string" :prop="(param.name || '').split(':')[0] as string" :rules="[{ required: true, message: `请输入${(param.name || '').split(':')[0]}`, trigger: 'blur' }]">
             <el-input 
               v-model="testParams[(param.name || '').split(':')[0] as string]" 
               :placeholder="`请输入${(param.name || '').split(':')[0]}`"
@@ -138,18 +138,18 @@ import { oneDark } from '@codemirror/theme-one-dark'
 import PaginatedTable from '../components/PaginatedTable.vue'
 import {
   getApiList,
-  addApi,
   deleteApi,
   getApiDetail,
-  updateApi,
   testApi,
   exportApiTestData,
   getFieldMappings,
-  saveFieldMappings,
   parseSqlFields,
+  addApiWithMappings,
+  updateApiWithMappings,
   type ApiData,
   type ApiSqlParam,
-  type ApiFieldMapping
+  type ApiFieldMapping,
+  type ApiConfigWithMappings
 } from '../api/api'
 import { listDatasource, type Datasource } from '../api/datasource'
 
@@ -256,6 +256,7 @@ const testResult = ref<any>(null)
 const testLoading = ref(false)
 const exportLoading = ref(false)
 const parseLoading = ref(false)
+const testFormRef = ref<FormInstance>()
 
 const rules: FormRules = {
   name: [{ required: true, message: '请输入API名称', trigger: 'blur' }],
@@ -393,61 +394,132 @@ const handleTest = async (row: ApiData) => {
 const handleTestSubmit = async () => {
   if (!testApiData.value) return
   
-  testLoading.value = true
-  testResult.value = null
-  
-  try {
-    const response = await testApi(testApiData.value.id, testParams.value)
-    if (response.data && response.data.data) {
-      testResult.value = response.data.data
-      ElMessage.success('测试成功')
-    } else {
-      ElMessage.error('测试失败：' + (response.data?.message || '未知错误'))
+  // 验证参数表单
+  if (testApiData.value.sqlParam.params && testApiData.value.sqlParam.params.length > 0) {
+    if (!testFormRef.value) return
+    await testFormRef.value.validate(async (valid) => {
+      if (valid) {
+        testLoading.value = true
+        testResult.value = null
+        
+        try {
+          const response = await testApi(testApiData.value!.id, testParams.value)
+          if (response.data && response.data.data) {
+            testResult.value = response.data.data
+            ElMessage.success('测试成功')
+          } else {
+            ElMessage.error('测试失败：' + (response.data?.message || '未知错误'))
+          }
+        } catch (error: any) {
+          console.error('测试API失败:', error)
+          ElMessage.error('测试失败：' + (error.response?.data?.message || error.message || '未知错误'))
+        } finally {
+          testLoading.value = false
+        }
+      }
+    })
+  } else {
+    // 没有参数时直接执行测试
+    testLoading.value = true
+    testResult.value = null
+    
+    try {
+      const response = await testApi(testApiData.value.id, testParams.value)
+      if (response.data && response.data.data) {
+        testResult.value = response.data.data
+        ElMessage.success('测试成功')
+      } else {
+        ElMessage.error('测试失败：' + (response.data?.message || '未知错误'))
+      }
+    } catch (error: any) {
+      console.error('测试API失败:', error)
+      ElMessage.error('测试失败：' + (error.response?.data?.message || error.message || '未知错误'))
+    } finally {
+      testLoading.value = false
     }
-  } catch (error: any) {
-    console.error('测试API失败:', error)
-    ElMessage.error('测试失败：' + (error.response?.data?.message || error.message || '未知错误'))
-  } finally {
-    testLoading.value = false
   }
 }
 
 const handleExport = async () => {
   if (!testApiData.value) return
   
-  exportLoading.value = true
-  
-  try {
-    const response = await exportApiTestData(testApiData.value.id, testParams.value)
-    
-    // 处理blob响应
-    const blob = response.data
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    
-    // 从响应头中获取文件名
-    const contentDisposition = response.headers['content-disposition']
-    let fileName = 'api_test_data.xlsx'
-    if (contentDisposition) {
-      const match = contentDisposition.match(/filename="([^"]+)"/)
-      if (match && match[1]) {
-        fileName = decodeURIComponent(match[1])
+  // 验证参数表单
+  if (testApiData.value.sqlParam.params && testApiData.value.sqlParam.params.length > 0) {
+    if (!testFormRef.value) return
+    await testFormRef.value.validate(async (valid) => {
+      if (valid) {
+        exportLoading.value = true
+        
+        try {
+          const response = await exportApiTestData(testApiData.value!.id, testParams.value)
+          
+          // 处理blob响应
+          const blob = response.data
+          const url = window.URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          
+          // 从响应头中获取文件名
+          const contentDisposition = response.headers['content-disposition']
+          let fileName = 'api_test_data.xlsx'
+          if (contentDisposition) {
+            const match = contentDisposition.match(/filename="([^"]+)"/)
+            if (match && match[1]) {
+              fileName = decodeURIComponent(match[1])
+            }
+          }
+          
+          link.setAttribute('download', fileName)
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          window.URL.revokeObjectURL(url)
+          
+          ElMessage.success('导出成功')
+        } catch (error: any) {
+          console.error('导出失败:', error)
+          ElMessage.error('导出失败：' + (error.response?.data?.message || error.message || '未知错误'))
+        } finally {
+          exportLoading.value = false
+        }
       }
+    })
+  } else {
+    // 没有参数时直接执行导出
+    exportLoading.value = true
+    
+    try {
+      const response = await exportApiTestData(testApiData.value.id, testParams.value)
+      
+      // 处理blob响应
+      const blob = response.data
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      
+      // 从响应头中获取文件名
+      const contentDisposition = response.headers['content-disposition']
+      let fileName = 'api_test_data.xlsx'
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="([^"]+)"/)
+        if (match && match[1]) {
+          fileName = decodeURIComponent(match[1])
+        }
+      }
+      
+      link.setAttribute('download', fileName)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      
+      ElMessage.success('导出成功')
+    } catch (error: any) {
+      console.error('导出失败:', error)
+      ElMessage.error('导出失败：' + (error.response?.data?.message || error.message || '未知错误'))
+    } finally {
+      exportLoading.value = false
     }
-    
-    link.setAttribute('download', fileName)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-    
-    ElMessage.success('导出成功')
-  } catch (error: any) {
-    console.error('导出失败:', error)
-    ElMessage.error('导出失败：' + (error.response?.data?.message || error.message || '未知错误'))
-  } finally {
-    exportLoading.value = false
   }
 }
 
@@ -536,34 +608,25 @@ const handleSubmit = async () => {
         }
         submitData.sql_param = JSON.stringify(formData.value.sqlParam)
         
-        // 移除fieldMappings，不随API配置一起提交
-        const fieldMappings = submitData.fieldMappings
-        delete submitData.fieldMappings
+        // 准备字段映射数据
+        const fieldMappings = formData.value.fieldMappings || []
+        
+        // 构建完整的提交数据
+        const completeData: ApiConfigWithMappings = {
+          apiConfig: submitData as ApiData,
+          fieldMappings: fieldMappings.map((m: ApiFieldMapping) => ({
+            ...m,
+            apiConfigId: formData.value.id || ''
+          }))
+        }
 
         if (isNewApi) {
-          // 新增API
-          const result = await addApi(submitData as Omit<ApiData, 'id'>)
-          const apiId = result.data?.data
-          
-          // 保存字段映射
-          if (apiId && fieldMappings && fieldMappings.length > 0) {
-            const mappingsWithId = fieldMappings.map((m: ApiFieldMapping) => ({
-              ...m,
-              apiConfigId: apiId
-            }))
-            await saveFieldMappings(apiId, mappingsWithId)
-          }
-          
+          // 新增API并保存字段映射
+          await addApiWithMappings(completeData)
           ElMessage.success('新增成功')
         } else {
-          // 更新API
-          await updateApi(submitData as ApiData)
-          
-          // 保存字段映射
-          if (fieldMappings) {
-            await saveFieldMappings(formData.value.id!, fieldMappings)
-          }
-          
+          // 更新API并保存字段映射
+          await updateApiWithMappings(completeData)
           ElMessage.success('修改成功')
         }
         

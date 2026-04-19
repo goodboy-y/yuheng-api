@@ -242,7 +242,7 @@ public class ApiServiceImpl implements ApiService {
         if (havingIndex != -1 && (clauseIndex == -1 || havingIndex < clauseIndex)) clauseIndex = havingIndex;
 
         // 检查是否包含 WHERE 子句
-        int whereIndex = sql.toLowerCase().indexOf(" where");
+        int whereIndex = sql.toLowerCase().indexOf("where");
         
         // 根据 SQL 结构添加 1=0 条件
         if (whereIndex != -1) {

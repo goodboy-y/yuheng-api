@@ -73,6 +73,19 @@ export const saveFieldMappings = (apiConfigId: string, mappings: ApiFieldMapping
   return request.post<ApiResponse<any>>(`/apiConfig/field-mapping/${apiConfigId}`, mappings)
 }
 
+export interface ApiConfigWithMappings {
+  apiConfig: ApiData
+  fieldMappings: ApiFieldMapping[]
+}
+
+export const addApiWithMappings = (data: ApiConfigWithMappings) => {
+  return request.post<ApiResponse<string>>('/apiConfig/add-with-mappings', data)
+}
+
+export const updateApiWithMappings = (data: ApiConfigWithMappings) => {
+  return request.post<ApiResponse<any>>('/apiConfig/update-with-mappings', data)
+}
+
 export const parseSqlFields = (datasourceId: string, sql: string) => {
   return request.get<ApiResponse<string[]>>('/apiConfig/parse-sql-fields', {
     params: { datasourceId, sql }

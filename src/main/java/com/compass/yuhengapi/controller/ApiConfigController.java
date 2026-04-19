@@ -46,10 +46,22 @@ public class ApiConfigController {
         return Result.success(apiConfigService.search(queryCmd));
     }
 
-    @RequestMapping("/add")
-    public Result<String> add(@RequestBody ApiConfig apiConfig) {
-        apiConfigService.add(apiConfig);
-        return Result.success("添加成功");
+    /**
+     * 新增API并保存字段映射
+     */
+    @PostMapping("/add-with-mappings")
+    public Result<String> addWithMappings(@RequestBody com.compass.yuhengapi.model.dto.ApiConfigWithMappingsDto dto) {
+        String apiId = apiConfigService.addWithMappings(dto.getApiConfig(), dto.getFieldMappings());
+        return Result.success(apiId);
+    }
+
+    /**
+     * 更新API并保存字段映射
+     */
+    @PostMapping("/update-with-mappings")
+    public Result<String> updateWithMappings(@RequestBody com.compass.yuhengapi.model.dto.ApiConfigWithMappingsDto dto) {
+        apiConfigService.updateWithMappings(dto.getApiConfig(), dto.getFieldMappings());
+        return Result.success("修改成功");
     }
 
     @RequestMapping("/parse-param")
@@ -71,12 +83,6 @@ public class ApiConfigController {
     public Result<String> delete(@PathVariable("id") String id) {
         apiConfigService.delete(id);
         return Result.success("删除成功");
-    }
-
-    @RequestMapping("/update")
-    public Result<String> update(@RequestBody ApiConfig apiConfig) {
-        apiConfigService.update(apiConfig);
-        return Result.success("修改成功");
     }
 
     @RequestMapping("/online/{id}")
