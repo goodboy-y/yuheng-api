@@ -193,7 +193,7 @@ const handleSubmit = async () => {
         dialogVisible.value = false
         fetchList()
       } catch (error: any) {
-        ElMessage.error(error.response?.data?.massage || '授权失败')
+        ElMessage.error(error.response?.data?.message || '授权失败')
       } finally {
         submitLoading.value = false
       }

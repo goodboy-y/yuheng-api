@@ -140,6 +140,12 @@ public class ApiServiceImpl implements ApiService {
     
     private Result<Object> executeSql(ApiSql apiSql, ApiDatasource datasource) {
         try (DruidPooledConnection connection = PoolManager.getPooledConnection(datasource)) {
+            // 先执行count查询检查数据量
+            long count = countRows(apiSql, connection);
+            if (count > 1000) {
+                return Result.fail("此语句数据量过大，请优化语句或改写为分页查询");
+            }
+            
             ResultSet rs = JdbcUtil.query(apiSql.sql(), connection, apiSql.params());
             int columnCount = rs.getMetaData().getColumnCount();
             List<String> columns = new ArrayList<>();
@@ -168,6 +174,19 @@ public class ApiServiceImpl implements ApiService {
             log.error(ExceptionUtils.getStackTrace(e));
             return Result.fail(e.getMessage());
         }
+    }
+    
+    private long countRows(ApiSql apiSql, DruidPooledConnection connection) {
+        String sql = apiSql.sql();
+        String countSql = "SELECT COUNT(*) FROM (" + sql + ")";
+        try (ResultSet rs = JdbcUtil.query(countSql, connection, apiSql.params())) {
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            log.error("Count query failed: {}", ExceptionUtils.getStackTrace(e));
+        }
+        return 0;
     }
 
     @Override
@@ -211,11 +230,42 @@ public class ApiServiceImpl implements ApiService {
         // 由于我们只需要获取字段信息，不需要实际执行，所以使用 1=0 条件不返回任何数据
         sql = sql.replaceAll("#\\{[^}]+}", "1");
 
-        // 添加 1=0 条件，确保不返回实际数据，只获取字段信息
-        if (sql.toLowerCase().contains("where")) {
-            sql = sql + " AND 1=0";
+        // 查找 ORDER BY、GROUP BY、HAVING 等子句的位置
+        int orderByIndex = sql.toLowerCase().indexOf(" order by");
+        int groupByIndex = sql.toLowerCase().indexOf(" group by");
+        int havingIndex = sql.toLowerCase().indexOf(" having");
+        
+        // 找到第一个出现的子句位置
+        int clauseIndex = -1;
+        if (orderByIndex != -1) clauseIndex = orderByIndex;
+        if (groupByIndex != -1 && (clauseIndex == -1 || groupByIndex < clauseIndex)) clauseIndex = groupByIndex;
+        if (havingIndex != -1 && (clauseIndex == -1 || havingIndex < clauseIndex)) clauseIndex = havingIndex;
+
+        // 检查是否包含 WHERE 子句
+        int whereIndex = sql.toLowerCase().indexOf(" where");
+        
+        // 根据 SQL 结构添加 1=0 条件
+        if (whereIndex != -1) {
+            // 如果已经有 WHERE 子句，在 WHERE 子句后添加 AND 1=0
+            if (clauseIndex != -1 && whereIndex < clauseIndex) {
+                // 在 WHERE 子句和其他子句之间添加 AND 1=0
+                String beforeClause = sql.substring(0, clauseIndex);
+                String afterClause = sql.substring(clauseIndex);
+                sql = beforeClause + " AND 1=0" + afterClause;
+            } else {
+                // 在末尾添加 AND 1=0
+                sql = sql + " AND 1=0";
+            }
         } else {
-            sql = sql + " WHERE 1=0";
+            // 如果没有 WHERE 子句，在其他子句之前添加 WHERE 1=0
+            if (clauseIndex != -1) {
+                String beforeClause = sql.substring(0, clauseIndex);
+                String afterClause = sql.substring(clauseIndex);
+                sql = beforeClause + " WHERE 1=0" + afterClause;
+            } else {
+                // 在末尾添加 WHERE 1=0
+                sql = sql + " WHERE 1=0";
+            }
         }
 
         return sql;
