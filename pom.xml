@@ -29,8 +29,14 @@
         <mapstruct.version>1.6.3</mapstruct.version>
         <hutool.version>5.8.40</hutool.version>
         <apache-collections4.version>4.5.0</apache-collections4.version>
+        <jsqlparser.version>5.3</jsqlparser.version>
     </properties>
     <dependencies>
+        <dependency>
+            <groupId>com.github.jsqlparser</groupId>
+            <artifactId>jsqlparser</artifactId>
+            <version>${jsqlparser.version}</version>
+        </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-thymeleaf</artifactId>

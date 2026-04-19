@@ -10,10 +10,38 @@ alwaysApply: true
 - src/main/resources/db/mysql_create_tables.sql
 - src/main/resources/db/oracle_create_tables.sql
 
-目录结构
+## 目录结构
 ```
 src 中是后端代码
 web 中是前端代码
 doc 中是项目文档
 ```
 修改完前端代码需要重新编译通过后打包
+
+## 编码规范
+在写嵌套代码时注意层级，尽量使用快速结束的写法，避免嵌套过深
+```
+for (ApiConfigPlugin apiConfigPlugin : apiConfigPlugins) {
+    ApiPlugin apiPlugin = apiConfigPlugin.getApiPlugin();
+    if (apiPlugin != null) {
+        Plugin plugin = loadPlugin(apiPlugin);
+        if (plugin != null) {
+            plugin.init(apiConfig);
+            plugins.put(apiPlugin.getId(), plugin);
+        }
+    }
+}
+应改为
+for (ApiConfigPlugin apiConfigPlugin : apiConfigPlugins) {
+    ApiPlugin apiPlugin = apiConfigPlugin.getApiPlugin();
+    if (apiPlugin == null) {
+        continue;
+    }
+    Plugin plugin = loadPlugin(apiPlugin);
+    if (plugin == null) {
+        continue;
+    }
+    plugin.init(apiConfig);
+    plugins.put(apiPlugin.getId(), plugin);
+}
+```

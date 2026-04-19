@@ -1,6 +1,9 @@
 package com.compass.yuhengapi.common.util;
 
 import com.compass.yuhengapi.common.enumerate.ReturnCodeEnum;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -10,6 +13,8 @@ public class Result<T> {
 
     private Integer code;
     private String message;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private PageInfo pageInfo;
     private T data;
     private long timestamp;
 

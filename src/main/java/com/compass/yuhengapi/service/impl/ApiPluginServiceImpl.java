@@ -59,13 +59,15 @@ public class ApiPluginServiceImpl implements ApiPluginService {
         List<ApiConfigPlugin> apiConfigPlugins = apiConfigPluginRepository.findByApiConfig(apiConfig);
         for (ApiConfigPlugin apiConfigPlugin : apiConfigPlugins) {
             ApiPlugin apiPlugin = apiConfigPlugin.getApiPlugin();
-            if (apiPlugin != null) {
-                Plugin plugin = loadPlugin(apiPlugin);
-                if (plugin != null) {
-                    plugin.init(apiConfig);
-                    plugins.put(apiPlugin.getId(), plugin);
-                }
+            if (apiPlugin == null) {
+                continue;
             }
+            Plugin plugin = loadPlugin(apiPlugin);
+            if (plugin == null) {
+                continue;
+            }
+            plugin.init(apiConfig);
+            plugins.put(apiPlugin.getId(), plugin);
         }
 
         return plugins;
@@ -117,7 +119,7 @@ public class ApiPluginServiceImpl implements ApiPluginService {
             }
 
             Class<?> pluginClass = Class.forName(className);
-            Plugin plugin = (Plugin) pluginClass.newInstance();
+            Plugin plugin = (Plugin) pluginClass.getDeclaredConstructor().newInstance();
             pluginCache.put(className, plugin);
             return plugin;
         } catch (Exception e) {

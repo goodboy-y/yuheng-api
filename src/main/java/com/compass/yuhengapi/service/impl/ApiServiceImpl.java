@@ -7,19 +7,25 @@ import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.compass.yuhengapi.common.enumerate.ReturnCodeEnum;
 import com.compass.yuhengapi.common.lang.APIException;
+import com.compass.yuhengapi.common.util.PageInfo;
 import com.compass.yuhengapi.common.util.Result;
 import com.compass.yuhengapi.model.bean.ApiSql;
 import com.compass.yuhengapi.model.entities.ApiConfig;
 import com.compass.yuhengapi.model.entities.ApiDatasource;
 import com.compass.yuhengapi.service.ApiConfigService;
 import com.compass.yuhengapi.service.ApiDataSourceService;
-import com.compass.yuhengapi.service.ApiService;
 import com.compass.yuhengapi.service.ApiPluginService;
+import com.compass.yuhengapi.service.ApiService;
 import com.compass.yuhengapi.util.JdbcUtil;
 import com.compass.yuhengapi.util.PoolManager;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.sf.jsqlparser.JSQLParserException;
+import net.sf.jsqlparser.parser.CCJSqlParserUtil;
+import net.sf.jsqlparser.statement.select.Join;
+import net.sf.jsqlparser.statement.select.PlainSelect;
+import net.sf.jsqlparser.statement.select.SelectItem;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
@@ -28,16 +34,15 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class ApiServiceImpl implements ApiService {
-    
+
     private final ApiConfigService apiConfigService;
     private final ApiDataSourceService apiDataSourceService;
     private final ApiPluginService apiPluginService;
@@ -46,25 +51,25 @@ public class ApiServiceImpl implements ApiService {
     public Result<Object> executeSql(HttpServletRequest request, ApiConfig config, ApiDatasource datasource) {
         // 加载插件
         Map<String, com.compass.yuhengapi.plugin.Plugin> plugins = apiPluginService.loadPluginsByApiConfig(config.getId());
-        
+
         // 处理请求参数
         Map<String, Object> requestParams = new java.util.HashMap<>();
         for (java.util.Enumeration<String> paramNames = request.getParameterNames(); paramNames.hasMoreElements(); ) {
             String name = paramNames.nextElement();
             requestParams.put(name, request.getParameter(name));
         }
-        
+
         for (com.compass.yuhengapi.plugin.Plugin plugin : plugins.values()) {
             requestParams = plugin.processRequest(request, requestParams);
         }
-        
+
         ApiSql apiSql = buildSqlFromRequest(request, config);
         if (apiSql == null) {
             return Result.custom(ReturnCodeEnum.RC400.getCode(), ReturnCodeEnum.RC400.getMessage(), null);
         }
-        
-        Result<Object> result = executeSql(apiSql, datasource);
-        
+
+        Result<Object> result = executeSql(apiSql, datasource, requestParams, plugins);
+
         // 处理响应
         if (result.getData() != null) {
             for (com.compass.yuhengapi.plugin.Plugin plugin : plugins.values()) {
@@ -72,7 +77,7 @@ public class ApiServiceImpl implements ApiService {
                 result.setData(processedData);
             }
         }
-        
+
         return result;
     }
 
@@ -86,30 +91,30 @@ public class ApiServiceImpl implements ApiService {
             }
             ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
 
-            
+
             // 加载插件
             Map<String, com.compass.yuhengapi.plugin.Plugin> plugins = apiPluginService.loadPluginsByApiConfig(config.getId());
-            
+
             // 处理请求参数
             for (com.compass.yuhengapi.plugin.Plugin plugin : plugins.values()) {
                 params = plugin.processRequest(attributes.getRequest(), params);
             }
-            
+
             // 获取数据源配置
             ApiDatasource datasource = apiDataSourceService.detail(config.getDatasource().getId());
             if (datasource == null) {
                 return Result.fail("数据源不存在！！");
             }
-            
+
             // 构建SQL
             ApiSql apiSql = buildSqlFromParams(params, config);
             if (apiSql == null) {
                 return Result.custom(ReturnCodeEnum.RC400.getCode(), ReturnCodeEnum.RC400.getMessage(), null);
             }
-            
+
             // 执行SQL
-            Result<Object> result = executeSql(apiSql, datasource);
-            
+            Result<Object> result = executeSql(apiSql, datasource, params, plugins);
+
             // 处理响应
             if (result.getData() != null) {
                 for (com.compass.yuhengapi.plugin.Plugin plugin : plugins.values()) {
@@ -117,7 +122,7 @@ public class ApiServiceImpl implements ApiService {
                     result.setData(processedData);
                 }
             }
-            
+
             return result;
         } catch (Exception e) {
             log.error(ExceptionUtils.getStackTrace(e));
@@ -153,7 +158,7 @@ public class ApiServiceImpl implements ApiService {
         }
         return new ApiSql(sql, params);
     }
-    
+
     private ApiSql buildSqlFromParams(Map<String, Object> params, ApiConfig config) {
         JSONObject jsonObject = JSON.parseObject(config.getSql_param());
         String sql = jsonObject.getString("sql");
@@ -168,13 +173,13 @@ public class ApiServiceImpl implements ApiService {
             String type = jo.getString("type");
             String old = "#{" + name + "}";
             sql = sql.replace(old, "?");
-            
+
             // 获取参数值
             Object value = params.get(StringUtils.substringBefore(name, ":"));
             if (value == null) {
                 return null;
             }
-            
+
             // 转换参数类型
             if ("int".equals(type)) {
                 sqlParams[i] = Long.parseLong(value.toString());
@@ -186,16 +191,20 @@ public class ApiServiceImpl implements ApiService {
         }
         return new ApiSql(sql, sqlParams);
     }
-    
-    private Result<Object> executeSql(ApiSql apiSql, ApiDatasource datasource) {
+
+    private Result<Object> executeSql(ApiSql apiSql, ApiDatasource datasource, Map<String, Object> requestParams, Map<String, com.compass.yuhengapi.plugin.Plugin> plugins) {
         try (DruidPooledConnection connection = PoolManager.getPooledConnection(datasource)) {
-            // 先执行count查询检查数据量
-            long count = countRows(apiSql, connection);
-            if (count > 1000) {
-                return Result.fail("此语句数据量过大，请优化语句或改写为分页查询");
+            // 检查是否有分页插件
+            boolean hasPaginationPlugin = plugins.values().stream()
+                .anyMatch(p -> p instanceof com.compass.yuhengapi.plugin.impl.PaginationPlugin);
+
+            // 应用插件处理SQL
+            ApiSql processedApiSql = apiSql;
+            for (com.compass.yuhengapi.plugin.Plugin plugin : plugins.values()) {
+                processedApiSql = plugin.processSql(processedApiSql, requestParams, datasource.getType());
             }
-            
-            ResultSet rs = JdbcUtil.query(apiSql.sql(), connection, apiSql.params());
+
+            ResultSet rs = JdbcUtil.query(processedApiSql.sql(), connection, processedApiSql.params());
             int columnCount = rs.getMetaData().getColumnCount();
             List<String> columns = new ArrayList<>();
             for (int i = 1; i <= columnCount; i++) {
@@ -215,7 +224,22 @@ public class ApiServiceImpl implements ApiService {
                 });
                 list.add(jo);
             }
-            return Result.success(list);
+
+            // 根据是否有分页插件决定返回格式
+            if (hasPaginationPlugin) {
+                // 执行count查询获取总记录数
+                long total = countRows(apiSql, connection);
+                PageInfo pageInfo = new PageInfo(
+                    Integer.parseInt(requestParams.get("page") + ""),
+                    list.size(),
+                    Integer.parseInt(requestParams.get("pageSize") + ""),
+                    total);
+                Result<Object> success = Result.success(list);
+                success.setPageInfo(pageInfo);
+                return success;
+            } else {
+                return Result.success(list);
+            }
         } catch (SQLException e) {
             log.error(ExceptionUtils.getStackTrace(e));
             return Result.fail(e.getMessage());
@@ -224,7 +248,7 @@ public class ApiServiceImpl implements ApiService {
             return Result.fail(e.getMessage());
         }
     }
-    
+
     private long countRows(ApiSql apiSql, DruidPooledConnection connection) {
         String sql = apiSql.sql();
         String countSql = "SELECT COUNT(*) FROM (" + sql + ")";
@@ -259,65 +283,32 @@ public class ApiServiceImpl implements ApiService {
                 }
                 return Result.success(columns);
             }
-        } catch (SQLException e) {
-            log.error(ExceptionUtils.getStackTrace(e));
-            return Result.fail("解析SQL字段失败：" + e.getMessage());
-        } catch (APIException e) {
+        } catch (SQLException | APIException | JSQLParserException e) {
             log.error(ExceptionUtils.getStackTrace(e));
             return Result.fail("解析SQL字段失败：" + e.getMessage());
         }
     }
 
-    private String wrapSqlForMetadata(String sql) {
-        // 移除末尾的分号
-        sql = sql.trim();
-        if (sql.endsWith(";")) {
-            sql = sql.substring(0, sql.length() - 1);
+    /**
+     * 将查询的sql的where条件变成 where 1 = 0。不用查出数据
+     *
+     * @param sql
+     * @return
+     * @throws JSQLParserException
+     */
+    private String wrapSqlForMetadata(String sql) throws JSQLParserException {
+        sql = sql.replaceAll("#\\{[^}]*}", "?");
+        PlainSelect select = (PlainSelect) CCJSqlParserUtil.parse(sql);
+        StringJoiner sj = new StringJoiner(" ");
+        sj.add("SELECT");
+        sj.add(select.getSelectItems().stream().map(SelectItem::toString).collect(Collectors.joining(",")));
+        sj.add("FROM");
+        sj.add(select.getFromItem().toString());
+        if (select.getJoins() != null) {
+            sj.add(select.getJoins().stream().map(Join::toString).collect(Collectors.joining(" ")));
         }
-
-        // 如果 SQL 包含参数占位符，替换为默认值或 1=1 条件
-        // 由于我们只需要获取字段信息，不需要实际执行，所以使用 1=0 条件不返回任何数据
-        sql = sql.replaceAll("#\\{[^}]+}", "1");
-
-        // 查找 ORDER BY、GROUP BY、HAVING 等子句的位置
-        int orderByIndex = sql.toLowerCase().indexOf(" order by");
-        int groupByIndex = sql.toLowerCase().indexOf(" group by");
-        int havingIndex = sql.toLowerCase().indexOf(" having");
-        
-        // 找到第一个出现的子句位置
-        int clauseIndex = -1;
-        if (orderByIndex != -1) clauseIndex = orderByIndex;
-        if (groupByIndex != -1 && (clauseIndex == -1 || groupByIndex < clauseIndex)) clauseIndex = groupByIndex;
-        if (havingIndex != -1 && (clauseIndex == -1 || havingIndex < clauseIndex)) clauseIndex = havingIndex;
-
-        // 检查是否包含 WHERE 子句
-        int whereIndex = sql.toLowerCase().indexOf("where");
-        
-        // 根据 SQL 结构添加 1=0 条件
-        if (whereIndex != -1) {
-            // 如果已经有 WHERE 子句，在 WHERE 子句后添加 AND 1=0
-            if (clauseIndex != -1 && whereIndex < clauseIndex) {
-                // 在 WHERE 子句和其他子句之间添加 AND 1=0
-                String beforeClause = sql.substring(0, clauseIndex);
-                String afterClause = sql.substring(clauseIndex);
-                sql = beforeClause + " AND 1=0" + afterClause;
-            } else {
-                // 在末尾添加 AND 1=0
-                sql = sql + " AND 1=0";
-            }
-        } else {
-            // 如果没有 WHERE 子句，在其他子句之前添加 WHERE 1=0
-            if (clauseIndex != -1) {
-                String beforeClause = sql.substring(0, clauseIndex);
-                String afterClause = sql.substring(clauseIndex);
-                sql = beforeClause + " WHERE 1=0" + afterClause;
-            } else {
-                // 在末尾添加 WHERE 1=0
-                sql = sql + " WHERE 1=0";
-            }
-        }
-
-        return sql;
+        sj.add("WHERE 1 = 0");
+        return sj.toString();
     }
 
 }
