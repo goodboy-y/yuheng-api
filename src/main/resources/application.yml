@@ -28,7 +28,7 @@ spring:
       ddl-auto: none
     show-sql: true
 jwt:
-  secret: "my-super-secret-key-for-shiro-jwt-integration-must-be-long-enough" # 至少 32 字符
+  secret: "bGl1eXVpc2Fnb2Rib3k=" # 至少 32 字符
   expiration: 3600000 # 1 小时
 
 # Resilience4j 配置

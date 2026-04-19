@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.List;
+
 @Entity
 @Table(name = "api_config", indexes = {@Index(name = "idx_api_config_1", columnList = "path", unique = true)})
 @Getter
@@ -32,6 +34,8 @@ public class ApiConfig {
 
     private String accountId;
 
+    @OneToMany(mappedBy = "apiConfig", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ApiConfigPlugin> plugins;
 
     public SqlParam getSqlParam() {
         if (sql_param == null) {

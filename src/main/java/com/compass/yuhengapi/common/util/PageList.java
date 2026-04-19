@@ -41,7 +41,7 @@ public final class PageList<T> {
         return new PageList<>(
             pageable.getPageNumber(),
             pageable.getPageSize(),
-            page.getTotalPages(),
+            page.getTotalElements(),
             null,
             page.getContent()
         );

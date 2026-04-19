@@ -32,6 +32,17 @@
           <el-input v-model="formData.note" type="textarea" placeholder="请输入备注"></el-input>
         </el-form-item>
 
+        <!-- 插件配置 -->
+        <el-divider content-position="left">插件配置</el-divider>
+        <el-form-item label="选择插件">
+          <el-select v-model="selectedPlugins" multiple placeholder="请选择插件" style="width: 100%">
+            <el-option v-for="plugin in pluginList" :key="plugin.id" :label="plugin.name" :value="plugin.id">
+              <span>{{ plugin.name }}</span>
+              <span style="float: right; color: #909399; font-size: 12px;">{{ plugin.description }}</span>
+            </el-option>
+          </el-select>
+        </el-form-item>
+
         <!-- 导出字段映射配置 -->
         <el-divider content-position="left">导出字段映射配置</el-divider>
         <el-form-item label="字段映射">
@@ -152,6 +163,12 @@ import {
   type ApiConfigWithMappings
 } from '../api/api'
 import { listDatasource, type Datasource } from '../api/datasource'
+import {
+  getApiPluginList,
+  getApiConfigPlugins,
+  saveApiConfigPlugins,
+  type ApiPluginData
+} from '../api/api-plugin'
 
 const columns = [
   { prop: 'name', label: 'API名称' },
@@ -195,13 +212,17 @@ const dialogTitle = ref('')
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
 const datasourceList = ref<Datasource[]>([])
-const currentPage = ref(0)
+const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 const searchParams = ref<Record<string, any>>({
   name: '',
   status: ''
 })
+
+// 插件相关变量
+const pluginList = ref<ApiPluginData[]>([])
+const selectedPlugins = ref<string[]>([])
 
 interface FormData {
   id?: string
@@ -308,6 +329,7 @@ const handleAdd = () => {
     note: '',
     fieldMappings: []
   }
+  selectedPlugins.value = []
   dialogVisible.value = true
 }
 
@@ -347,6 +369,8 @@ const handleEdit = async (row: ApiData) => {
 
       // 加载字段映射配置
       loadFieldMappings(data.id)
+      // 加载插件配置
+      loadApiConfigPlugins(data.id)
     } else {
       console.error('API响应数据格式不正确:', response)
       ElMessage.error('获取API详情失败：数据格式不正确')
@@ -541,6 +565,18 @@ const loadFieldMappings = async (apiConfigId: string) => {
   }
 }
 
+// 加载API配置的插件
+const loadApiConfigPlugins = async (apiConfigId: string) => {
+  try {
+    const response = await getApiConfigPlugins(apiConfigId)
+    if (response.data && response.data.data) {
+      selectedPlugins.value = response.data.data.map((plugin: ApiPluginData) => plugin.id)
+    }
+  } catch (error) {
+    console.error('加载插件配置失败:', error)
+  }
+}
+
 // 在表单中添加字段映射
 const handleAddMappingInForm = () => {
   formData.value.fieldMappings.push({
@@ -622,11 +658,16 @@ const handleSubmit = async () => {
 
         if (isNewApi) {
           // 新增API并保存字段映射
-          await addApiWithMappings(completeData)
+          const response = await addApiWithMappings(completeData)
+          const newApiId = response.data.data
+          // 保存插件配置
+          await saveApiConfigPlugins(newApiId, selectedPlugins.value)
           ElMessage.success('新增成功')
         } else {
           // 更新API并保存字段映射
           await updateApiWithMappings(completeData)
+          // 保存插件配置
+          await saveApiConfigPlugins(formData.value.id as string, selectedPlugins.value)
           ElMessage.success('修改成功')
         }
         
@@ -659,7 +700,20 @@ const fetchDatasourceList = async () => {
 onMounted(() => {
   fetchList()
   fetchDatasourceList()
+  fetchPluginList()
 })
+
+// 获取插件列表
+const fetchPluginList = async () => {
+  try {
+    const response = await getApiPluginList()
+    if (response.data && response.data.data) {
+      pluginList.value = response.data.data
+    }
+  } catch (error) {
+    console.error('获取插件列表失败:', error)
+  }
+}
 </script>
 
 <style scoped>

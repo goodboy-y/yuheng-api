@@ -10,12 +10,12 @@ import org.springframework.data.domain.Sort;
 @Setter
 public class QueryCmd {
 
-    private Integer page;
+    private Integer page = 1;
 
-    private Integer pageSize;
+    private Integer pageSize = 20;
 
 
     public Pageable toPageable() {
-        return PageRequest.of(page, pageSize, Sort.by("id"));
+        return PageRequest.of(page - 1, pageSize, Sort.by("id"));
     }
 }

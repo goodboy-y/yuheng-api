@@ -112,3 +112,32 @@ CREATE TABLE IF NOT EXISTS `api_config_access` (
   CONSTRAINT `fk_api_config_access_client` FOREIGN KEY (`client_id`) REFERENCES `api_client` (`id`),
   CONSTRAINT `fk_api_config_access_config` FOREIGN KEY (`api_config_id`) REFERENCES `api_config` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- api_plugin表
+CREATE TABLE IF NOT EXISTS `api_plugin` (
+  `id` VARCHAR(36) NOT NULL,
+  `name` VARCHAR(100) NOT NULL,
+  `description` VARCHAR(500) DEFAULT NULL,
+  `class_name` VARCHAR(255) NOT NULL,
+  `account_id` VARCHAR(255) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_api_plugin_account_id` (`account_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- api_config_plugin表
+CREATE TABLE IF NOT EXISTS `api_config_plugin` (
+  `id` VARCHAR(36) NOT NULL,
+  `api_config_id` VARCHAR(36) NOT NULL,
+  `api_plugin_id` VARCHAR(36) NOT NULL,
+  `account_id` VARCHAR(255) NOT NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_api_config_plugin_api_config_id` (`api_config_id`),
+  KEY `idx_api_config_plugin_api_plugin_id` (`api_plugin_id`),
+  KEY `idx_api_config_plugin_account_id` (`account_id`),
+  CONSTRAINT `fk_api_config_plugin_api_config` FOREIGN KEY (`api_config_id`) REFERENCES `api_config` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_api_config_plugin_api_plugin` FOREIGN KEY (`api_plugin_id`) REFERENCES `api_plugin` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -14,6 +14,7 @@ import com.compass.yuhengapi.model.entities.ApiDatasource;
 import com.compass.yuhengapi.service.ApiConfigService;
 import com.compass.yuhengapi.service.ApiDataSourceService;
 import com.compass.yuhengapi.service.ApiService;
+import com.compass.yuhengapi.service.ApiPluginService;
 import com.compass.yuhengapi.util.JdbcUtil;
 import com.compass.yuhengapi.util.PoolManager;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,6 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -37,14 +40,40 @@ public class ApiServiceImpl implements ApiService {
     
     private final ApiConfigService apiConfigService;
     private final ApiDataSourceService apiDataSourceService;
+    private final ApiPluginService apiPluginService;
 
     @Override
     public Result<Object> executeSql(HttpServletRequest request, ApiConfig config, ApiDatasource datasource) {
+        // 加载插件
+        Map<String, com.compass.yuhengapi.plugin.Plugin> plugins = apiPluginService.loadPluginsByApiConfig(config.getId());
+        
+        // 处理请求参数
+        Map<String, Object> requestParams = new java.util.HashMap<>();
+        for (java.util.Enumeration<String> paramNames = request.getParameterNames(); paramNames.hasMoreElements(); ) {
+            String name = paramNames.nextElement();
+            requestParams.put(name, request.getParameter(name));
+        }
+        
+        for (com.compass.yuhengapi.plugin.Plugin plugin : plugins.values()) {
+            requestParams = plugin.processRequest(request, requestParams);
+        }
+        
         ApiSql apiSql = buildSqlFromRequest(request, config);
         if (apiSql == null) {
             return Result.custom(ReturnCodeEnum.RC400.getCode(), ReturnCodeEnum.RC400.getMessage(), null);
         }
-        return executeSql(apiSql, datasource);
+        
+        Result<Object> result = executeSql(apiSql, datasource);
+        
+        // 处理响应
+        if (result.getData() != null) {
+            for (com.compass.yuhengapi.plugin.Plugin plugin : plugins.values()) {
+                Object processedData = plugin.processResponse(result.getData());
+                result.setData(processedData);
+            }
+        }
+        
+        return result;
     }
 
     @Override
@@ -54,6 +83,16 @@ public class ApiServiceImpl implements ApiService {
             ApiConfig config = apiConfigService.detail(apiId);
             if (config == null) {
                 return Result.fail("该接口不存在！！");
+            }
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+
+            
+            // 加载插件
+            Map<String, com.compass.yuhengapi.plugin.Plugin> plugins = apiPluginService.loadPluginsByApiConfig(config.getId());
+            
+            // 处理请求参数
+            for (com.compass.yuhengapi.plugin.Plugin plugin : plugins.values()) {
+                params = plugin.processRequest(attributes.getRequest(), params);
             }
             
             // 获取数据源配置
@@ -69,7 +108,17 @@ public class ApiServiceImpl implements ApiService {
             }
             
             // 执行SQL
-            return executeSql(apiSql, datasource);
+            Result<Object> result = executeSql(apiSql, datasource);
+            
+            // 处理响应
+            if (result.getData() != null) {
+                for (com.compass.yuhengapi.plugin.Plugin plugin : plugins.values()) {
+                    Object processedData = plugin.processResponse(result.getData());
+                    result.setData(processedData);
+                }
+            }
+            
+            return result;
         } catch (Exception e) {
             log.error(ExceptionUtils.getStackTrace(e));
             return Result.fail(e.getMessage());

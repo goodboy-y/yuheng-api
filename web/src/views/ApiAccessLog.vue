@@ -44,16 +44,15 @@
             </el-form>
           </div>
           <el-table :data="logList" style="width: 100%" v-loading="loading" :row-style="{ height: '60px' }">
-            <el-table-column prop="accessTime" label="访问时间" width="180" />
+            <el-table-column prop="accessTime" label="访问时间" width="200" />
             <el-table-column prop="path" label="访问路径" />
-            <el-table-column prop="clientId" label="客户端ID" width="150" />
+            <el-table-column prop="clientId" label="客户端ID" width="200" />
             <el-table-column prop="params" label="访问参数" width="120">
               <template #default="scope">
                 <el-link v-if="scope.row.params" type="primary" @click="showParams(scope.row.params)">查看</el-link>
                 <span v-else>-</span>
               </template>
             </el-table-column>
-            <el-table-column prop="accountId" label="账户ID" width="150" />
             <el-table-column label="操作" width="100">
               <template #default="scope">
                 <el-button size="small" type="danger" @click="handleDelete(scope.row.id)">删除</el-button>
@@ -122,7 +121,6 @@
                 <span v-else>-</span>
               </template>
             </el-table-column>
-            <el-table-column prop="accountId" label="账户ID" width="150" />
           </el-table>
           <div class="pagination-container">
             <el-pagination

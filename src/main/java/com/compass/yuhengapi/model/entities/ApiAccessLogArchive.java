@@ -1,5 +1,6 @@
 package com.compass.yuhengapi.model.entities;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,6 +22,7 @@ public class ApiAccessLogArchive {
     private String id;
 
     @Column(nullable = false)
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime accessTime;
 
     @Column(nullable = false)
