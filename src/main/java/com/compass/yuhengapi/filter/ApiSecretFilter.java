@@ -8,29 +8,42 @@ import com.compass.yuhengapi.model.entities.ApiClient;
 import com.compass.yuhengapi.model.entities.ApiConfig;
 import com.compass.yuhengapi.repo.ApiClientRepository;
 import com.compass.yuhengapi.repo.ApiConfigRepository;
+import com.compass.yuhengapi.service.ApiAccessLogService;
 import com.compass.yuhengapi.service.ApiConfigAccessService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @SuppressWarnings("all")
-@RequiredArgsConstructor
 public class ApiSecretFilter extends OncePerRequestFilter {
 
     private final ApiClientRepository apiClientRepository;
     private final ApiConfigRepository apiConfigRepository;
     private final ApiConfigAccessService apiConfigAccessService;
+    @Autowired
+    private ApiAccessLogService apiAccessLogService;
+
+    public ApiSecretFilter(ApiClientRepository apiClientRepository,
+                           ApiConfigRepository apiConfigRepository,
+                           ApiConfigAccessService apiConfigAccessService) {
+        this.apiClientRepository = apiClientRepository;
+        this.apiConfigRepository = apiConfigRepository;
+        this.apiConfigAccessService = apiConfigAccessService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -48,7 +61,7 @@ public class ApiSecretFilter extends OncePerRequestFilter {
                 // 验证客户端是否有权限访问该API,去掉"/api/"字符
                 String apiPath = request.getServletPath().substring(5);
                 ApiConfig apiConfig = apiConfigRepository.selectByPath(apiPath);
-                
+
                 if (apiConfig != null) {
                     boolean hasAccess = apiConfigAccessService.hasAccess(apiClient.getId(), apiConfig.getId());
                     if (!hasAccess) {
@@ -66,8 +79,16 @@ public class ApiSecretFilter extends OncePerRequestFilter {
                         }
                     }
                 }
-                
-                // 符合条件放行
+
+                Map<String, String> params = new HashMap<>();
+                Enumeration<String> paramNames = request.getParameterNames();
+                while (paramNames.hasMoreElements()) {
+                    String name = paramNames.nextElement();
+                    params.put(name, request.getParameter(name));
+                }
+                apiAccessLogService.saveLog(apiPath, apiClient.getClientId(),
+                    JSONUtil.toJsonStr(params), apiClient.getAccountId());
+
                 filterChain.doFilter(request, response);
                 return;
             }

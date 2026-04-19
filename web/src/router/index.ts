@@ -59,6 +59,15 @@ const routes: RouteRecordRaw[] = [
       title: 'API授权管理',
       icon: 'Key'
     }
+  },
+  {
+    path: '/api-access-log',
+    name: 'ApiAccessLog',
+    component: () => import('../views/ApiAccessLog.vue'),
+    meta: {
+      title: 'API访问日志',
+      icon: 'Document'
+    }
   }
 ]
 

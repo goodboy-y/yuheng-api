@@ -14,6 +14,35 @@ CREATE TABLE IF NOT EXISTS `api_account` (
   UNIQUE KEY `idx_account_1` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- api_access_log表
+CREATE TABLE IF NOT EXISTS `api_access_log` (
+  `id` VARCHAR(36) NOT NULL,
+  `access_time` DATETIME NOT NULL,
+  `path` VARCHAR(255) NOT NULL,
+  `client_id` VARCHAR(255) NOT NULL,
+  `params` TEXT DEFAULT NULL,
+  `account_id` VARCHAR(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_api_access_log_access_time` (`access_time`),
+  KEY `idx_api_access_log_path` (`path`),
+  KEY `idx_api_access_log_client_id` (`client_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- api_access_log_archive表
+CREATE TABLE IF NOT EXISTS `api_access_log_archive` (
+  `id` VARCHAR(36) NOT NULL,
+  `access_time` DATETIME NOT NULL,
+  `path` VARCHAR(255) NOT NULL,
+  `client_id` VARCHAR(255) NOT NULL,
+  `params` TEXT DEFAULT NULL,
+  `account_id` VARCHAR(255) DEFAULT NULL,
+  `archive_time` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_api_access_log_archive_access_time` (`access_time`),
+  KEY `idx_api_access_log_archive_path` (`path`),
+  KEY `idx_api_access_log_archive_client_id` (`client_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- api_client表
 CREATE TABLE IF NOT EXISTS `api_client` (
   `id` VARCHAR(36) NOT NULL,
