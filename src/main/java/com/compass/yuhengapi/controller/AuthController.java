@@ -1,7 +1,9 @@
 package com.compass.yuhengapi.controller;
 
 import com.compass.yuhengapi.common.util.Result;
+import com.compass.yuhengapi.model.dto.ChangePasswordDto;
 import com.compass.yuhengapi.model.dto.LoginDto;
+import com.compass.yuhengapi.service.AuthService;
 import com.compass.yuhengapi.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,8 @@ public class AuthController {
 
     private final JwtUtil jwtUtil;
 
+    private final AuthService authService;
+
     @PostMapping("/login")
     public Result<String> login(@RequestBody LoginDto login) {
         try {
@@ -39,6 +43,12 @@ public class AuthController {
 
     @PostMapping("/logout")
     public Result<String> logout(HttpServletRequest request) {
+        return Result.success(null);
+    }
+
+    @PostMapping("/changePassword")
+    public Result<Void> changePassword(@RequestBody ChangePasswordDto changePassword) {
+        authService.changePassword(changePassword);
         return Result.success(null);
     }
 

@@ -35,7 +35,7 @@ const loading = ref(false)
 
 const loginForm = ref({
   username: 'admin',
-  password: 'admin'
+  password: 'adminadmin'
 })
 
 const rules: FormRules = {

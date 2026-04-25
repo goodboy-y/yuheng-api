@@ -3,15 +3,18 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useMenuStore } from './store/modules/menu'
 import { useTabsStore } from './store/modules/tabs'
-import { ArrowLeft, ArrowRight, SwitchButton } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowRight, SwitchButton, User, Lock } from '@element-plus/icons-vue'
 import { removeToken } from './utils/auth'
 import { ElMessage } from 'element-plus'
-import { logout } from './api/auth'
+import type { FormInstance, FormRules } from 'element-plus'
+import { logout, changePassword } from './api/auth'
 
 const icons = {
   ArrowLeft,
   ArrowRight,
-  SwitchButton
+  SwitchButton,
+  User,
+  Lock
 }
 
 const handleLogout = async () => {
@@ -34,6 +37,74 @@ const tabsStore = useTabsStore()
 const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
 const currentTab = ref<any>(null)
+
+const passwordDialogVisible = ref(false)
+const passwordFormRef = ref<FormInstance>()
+const passwordLoading = ref(false)
+const passwordForm = ref({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const validateConfirmPassword = (_rule: any, value: any, callback: any) => {
+  if (value !== passwordForm.value.newPassword) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
+
+const passwordRules: FormRules = {
+  oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于6位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    { validator: validateConfirmPassword, trigger: 'blur' }
+  ]
+}
+
+const handlePasswordCommand = (command: string) => {
+  if (command === 'changePassword') {
+    passwordDialogVisible.value = true
+  } else if (command === 'logout') {
+    handleLogout()
+  }
+}
+
+const handleChangePassword = async () => {
+  if (!passwordFormRef.value) return
+
+  await passwordFormRef.value.validate(async (valid) => {
+    if (valid) {
+      passwordLoading.value = true
+      try {
+        await changePassword({
+          oldPassword: passwordForm.value.oldPassword,
+          newPassword: passwordForm.value.newPassword
+        })
+        ElMessage.success('密码修改成功')
+        passwordDialogVisible.value = false
+        passwordForm.value = {
+          oldPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        }
+      } catch (error) {
+        console.error('修改密码失败:', error)
+      } finally {
+        passwordLoading.value = false
+      }
+    }
+  })
+}
+
+const handlePasswordDialogClose = () => {
+  passwordFormRef.value?.resetFields()
+}
 
 const isLoginPage = computed(() => route.path === '/login')
 
@@ -164,10 +235,25 @@ onUnmounted(() => {
       <div class="header">
         <div class="header-title">API接口管理系统</div>
         <div class="header-actions">
-          <el-button type="danger" size="small" @click="handleLogout">
-            <el-icon><SwitchButton /></el-icon>
-            退出登录
-          </el-button>
+          <el-dropdown @command="handlePasswordCommand">
+            <el-button type="primary" size="small">
+              <el-icon><User /></el-icon>
+              个人中心
+              <el-icon><ArrowRight /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="changePassword">
+                  <el-icon><Lock /></el-icon>
+                  修改密码
+                </el-dropdown-item>
+                <el-dropdown-item command="logout" divided>
+                  <el-icon><SwitchButton /></el-icon>
+                  退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </div>
       <div class="tabs-container">
@@ -208,6 +294,25 @@ onUnmounted(() => {
       <div class="context-menu-item" @click.stop="handleCloseLeft">关闭左侧页签</div>
       <div class="context-menu-item" @click.stop="handleCloseRight">关闭右侧页签</div>
     </div>
+
+    <el-dialog v-model="passwordDialogVisible" title="修改密码" width="450px" @close="handlePasswordDialogClose">
+      <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef" label-width="100px">
+        <el-form-item label="原密码" prop="oldPassword">
+          <el-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入原密码" show-password />
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input v-model="passwordForm.newPassword" type="password" placeholder="请输入新密码" show-password />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input v-model="passwordForm.confirmPassword" type="password" placeholder="请再次输入新密码" show-password />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="passwordDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleChangePassword" :loading="passwordLoading">确定</el-button>
+      </template>
+    </el-dialog>
+
     <router-view v-if="isLoginPage" />
   </div>
 </template>

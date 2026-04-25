@@ -240,6 +240,10 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <image>
+                        <!-- 指定构建器，full 版本包含更多依赖，兼容性更好 -->
+                        <builder>paketobuildpacks/builder-jammy-full:latest</builder>
+                    </image>
                     <excludes>
                         <exclude>
                             <groupId>org.projectlombok</groupId>
