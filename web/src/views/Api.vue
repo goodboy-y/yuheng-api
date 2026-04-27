@@ -125,8 +125,13 @@
         </el-form>
         
         <div v-if="testResult" class="test-result">
-          <h4>测试结果</h4>
-          <pre>{{ JSON.stringify(testResult, null, 2) }}</pre>
+          <div class="test-result-header">
+            <h4>测试结果</h4>
+            <div>
+              <el-button type="text" @click="toggleExpandAll">{{ expandAll ? '折叠全部' : '展开全部' }}</el-button>
+            </div>
+          </div>
+          <json-viewer :key="expandDepth" :value="testResult" :expand-depth="expandDepth" copyable sort />
         </div>
       </div>
       
@@ -147,6 +152,7 @@ import { Codemirror } from 'vue-codemirror'
 import { sql } from '@codemirror/lang-sql'
 import { oneDark } from '@codemirror/theme-one-dark'
 import PaginatedTable from '../components/PaginatedTable.vue'
+import { JsonViewer } from 'vue3-json-viewer'
 import {
   getApiList,
   deleteApi,
@@ -278,6 +284,15 @@ const testLoading = ref(false)
 const exportLoading = ref(false)
 const parseLoading = ref(false)
 const testFormRef = ref<FormInstance>()
+
+// JSON查看器展开控制
+const expandAll = ref(false)
+const expandDepth = ref(2)
+
+const toggleExpandAll = () => {
+  expandAll.value = !expandAll.value
+  expandDepth.value = expandAll.value ? 1000 : 2
+}
 
 const rules: FormRules = {
   name: [{ required: true, message: '请输入API名称', trigger: 'blur' }],
@@ -429,7 +444,7 @@ const handleTestSubmit = async () => {
         try {
           const response = await testApi(testApiData.value!.id, testParams.value)
           if (response.data && response.data.data) {
-            testResult.value = response.data.data
+            testResult.value = response.data
             ElMessage.success('测试成功')
           } else {
             ElMessage.error('测试失败：' + (response.data?.message || '未知错误'))
@@ -450,7 +465,7 @@ const handleTestSubmit = async () => {
     try {
       const response = await testApi(testApiData.value.id, testParams.value)
       if (response.data && response.data.data) {
-        testResult.value = response.data.data
+        testResult.value = response.data
         ElMessage.success('测试成功')
       } else {
         ElMessage.error('测试失败：' + (response.data?.message || '未知错误'))
@@ -767,9 +782,19 @@ const fetchPluginList = async () => {
   border-radius: 4px;
 }
 
-.test-result h4 {
-  margin-top: 0;
+.test-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 10px;
+}
+
+.test-result-header h4 {
+  margin: 0;
+}
+
+.test-result-header .el-button {
+  padding: 0;
 }
 
 .test-result pre {
