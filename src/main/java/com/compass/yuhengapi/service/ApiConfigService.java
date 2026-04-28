@@ -34,4 +34,9 @@ public interface ApiConfigService {
      */
     void updateWithMappings(ApiConfig apiConfig, List<ApiFieldMapping> fieldMappings);
 
+    /**
+     * 获取未授权给指定客户端的API列表
+     */
+    PageList<ApiConfig> getUnAuthorizedApiConfigs(String clientId, int pageNum, int pageSize, String name);
+
 }

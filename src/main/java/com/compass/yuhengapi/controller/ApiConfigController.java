@@ -104,6 +104,11 @@ public class ApiConfigController {
         return hostIp + ":" + port;
     }
 
+    @RequestMapping("/unauthorized")
+    public Result<PageList<ApiConfig>> getUnAuthorizedApiConfigs(@RequestParam String clientId, @RequestParam(defaultValue = "0") int pageNum, @RequestParam(defaultValue = "20") int pageSize, @RequestParam(required = false) String name) {
+        return Result.success(apiConfigService.getUnAuthorizedApiConfigs(clientId, pageNum, pageSize, name));
+    }
+
     @SuppressWarnings("all")
     @RequestMapping("/remote-request")
     public JSONObject request(String url, String params) {

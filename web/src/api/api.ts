@@ -91,3 +91,10 @@ export const parseSqlFields = (datasourceId: string, sql: string) => {
     params: { datasourceId, sql }
   })
 }
+
+// 获取未授权的API列表
+export const getUnauthorizedApis = (clientId: string, page: number = 0, pageSize: number = 20, name: string = '') => {
+  return request.get<ApiResponse<PageData<ApiData>>>('/apiConfig/unauthorized', {
+    params: { clientId, pageNum: page, pageSize, name }
+  })
+}

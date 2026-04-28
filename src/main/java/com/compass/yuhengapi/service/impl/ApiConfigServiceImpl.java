@@ -6,6 +6,7 @@ import com.compass.yuhengapi.model.bean.ApiParam;
 import com.compass.yuhengapi.model.bean.SqlParam;
 import com.compass.yuhengapi.model.dto.ApiConfigQueryCmd;
 import com.compass.yuhengapi.model.entities.ApiConfig;
+import com.compass.yuhengapi.repo.ApiClientRepository;
 import com.compass.yuhengapi.repo.ApiConfigRepository;
 import com.compass.yuhengapi.repo.ApiFieldMappingRepository;
 import com.compass.yuhengapi.service.ApiConfigService;
@@ -32,6 +33,7 @@ public class ApiConfigServiceImpl implements ApiConfigService {
 
     private final ApiConfigRepository apiConfigRepository;
     private final ApiFieldMappingRepository fieldMappingRepository;
+    private final ApiClientRepository apiClientRepository;
 
     private final Pattern pattern = Pattern.compile("#\\{([^}]*)}");
 
@@ -180,6 +182,24 @@ public class ApiConfigServiceImpl implements ApiConfigService {
             // 如果没有字段映射，则删除所有旧的映射
             fieldMappingRepository.deleteByApiConfigId(apiConfigId);
         }
+    }
+
+    @Override
+    public PageList<ApiConfig> getUnAuthorizedApiConfigs(String clientId, int pageNum, int pageSize, String name) {
+        // 验证客户端是否存在
+        apiClientRepository.findById(clientId)
+                .orElseThrow(() -> new RuntimeException("客户端不存在"));
+
+        Pageable pageable = Pageable.ofSize(pageSize).withPage(pageNum);
+        Page<ApiConfig> page;
+
+        if (StringUtils.isNoneBlank(name)) {
+            page = apiConfigRepository.findUnAuthorizedApiConfigsByName(clientId, name, pageable);
+        } else {
+            page = apiConfigRepository.findUnAuthorizedApiConfigs(clientId, pageable);
+        }
+
+        return PageList.of(page, pageable);
     }
 
 }

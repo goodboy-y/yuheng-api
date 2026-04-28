@@ -10,6 +10,8 @@
       :current-page="currentPage"
       :page-size="pageSize"
       :show-test="false"
+      :show-auth="true"
+      :show-revoke="true"
       @add="handleAdd"
       @view="handleView"
       @edit="handleEdit"
@@ -17,6 +19,8 @@
       @update:page="handlePageChange"
       @search="handleSearch"
       @reset="handleReset"
+      @auth="handleAuth"
+      @revoke="handleRevoke"
     />
 
     <el-dialog
@@ -60,6 +64,103 @@
         <el-button @click="detailDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <!-- 授权管理弹窗 -->
+    <el-dialog
+      v-model="authDialogVisible"
+      title="API授权管理"
+      width="800px"
+    >
+      <div class="auth-dialog">
+        <div class="search-bar">
+          <el-input
+            v-model="authSearchParams.name"
+            placeholder="请输入API名称"
+            style="width: 300px"
+            @keyup.enter="fetchUnauthorizedApis"
+          >
+            <template #append>
+              <el-button @click="fetchUnauthorizedApis">搜索</el-button>
+            </template>
+          </el-input>
+        </div>
+
+        <el-table
+          :data="unauthorizedApiList"
+          style="width: 100%"
+          v-loading="authLoading"
+          @selection-change="handleAuthSelectionChange"
+        >
+          <el-table-column type="selection" width="55"></el-table-column>
+          <el-table-column prop="name" label="API名称"></el-table-column>
+          <el-table-column prop="path" label="请求路径"></el-table-column>
+          <el-table-column prop="method" label="请求方法"></el-table-column>
+          <el-table-column prop="datasourceName" label="数据源"></el-table-column>
+        </el-table>
+
+        <div class="pagination">
+          <el-pagination
+            :current-page="authCurrentPage"
+            :page-size="authPageSize"
+            :total="authTotal"
+            layout="total, prev, pager, next"
+            @current-change="handleAuthPageChange"
+          ></el-pagination>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="authDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleGrant" :loading="authSubmitLoading" :disabled="selectedApis.length === 0">授权</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 取消授权弹窗 -->
+    <el-dialog
+      v-model="revokeDialogVisible"
+      title="取消API授权"
+      width="800px"
+    >
+      <div class="revoke-dialog">
+        <div class="search-bar">
+          <el-input
+            v-model="revokeSearchParams.apiPath"
+            placeholder="请输入API路径"
+            style="width: 300px"
+            @keyup.enter="fetchAuthorizedApis"
+          >
+            <template #append>
+              <el-button @click="fetchAuthorizedApis">搜索</el-button>
+            </template>
+          </el-input>
+        </div>
+
+        <el-table
+          :data="authorizedApiList"
+          style="width: 100%"
+          v-loading="revokeLoading"
+          @selection-change="handleRevokeSelectionChange"
+        >
+          <el-table-column type="selection" width="55"></el-table-column>
+          <el-table-column prop="apiConfig.name" label="API名称"></el-table-column>
+          <el-table-column prop="apiConfig.path" label="请求路径"></el-table-column>
+          <el-table-column prop="apiConfig.method" label="请求方法"></el-table-column>
+        </el-table>
+
+        <div class="pagination">
+          <el-pagination
+            :current-page="revokeCurrentPage"
+            :page-size="revokePageSize"
+            :total="revokeTotal"
+            layout="total, prev, pager, next"
+            @current-change="handleRevokePageChange"
+          ></el-pagination>
+        </div>
+      </div>
+      <template #footer>
+        <el-button @click="revokeDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleRevokeSubmit" :loading="revokeSubmitLoading" :disabled="selectedRevokeApis.length === 0">取消授权</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -76,6 +177,16 @@ import {
   updateClient,
   type ClientData
 } from '../api/client'
+import {
+  getUnauthorizedApis,
+  type ApiData
+} from '../api/api'
+import {
+  getApiConfigAccessList,
+  grantAccess,
+  revokeAccess,
+  type ApiConfigAccessData
+} from '../api/api-config-access'
 
 const columns = [
   { prop: 'name', label: '名称' },
@@ -104,16 +215,6 @@ const searchParams = ref<Record<string, any>>({
   name: '',
   clientId: ''
 })
-const formData = ref<Partial<ClientData>>({
-  name: '',
-  note: '',
-  clientId: '',
-  secret: '',
-  expireDuration: '',
-  token: '',
-  expireAt: '',
-  accountId: ''
-})
 const detailData = ref<ClientData>({
   id: '',
   name: '',
@@ -125,6 +226,44 @@ const detailData = ref<ClientData>({
   token: '',
   expireAt: '',
   accountId: ''
+})
+
+const formData = ref<Partial<ClientData>>({
+  name: '',
+  note: '',
+  clientId: '',
+  secret: '',
+  expireDuration: '',
+  token: '',
+  expireAt: '',
+  accountId: ''
+})
+
+// 授权管理相关数据
+const authDialogVisible = ref(false)
+const authLoading = ref(false)
+const authSubmitLoading = ref(false)
+const unauthorizedApiList = ref<ApiData[]>([])
+const authCurrentPage = ref(1)
+const authPageSize = ref(20)
+const authTotal = ref(0)
+const currentClientId = ref('')
+const selectedApis = ref<ApiData[]>([])
+const authSearchParams = ref<Record<string, any>>({
+  name: ''
+})
+
+// 取消授权相关数据
+const revokeDialogVisible = ref(false)
+const revokeLoading = ref(false)
+const revokeSubmitLoading = ref(false)
+const authorizedApiList = ref<ApiConfigAccessData[]>([])
+const revokeCurrentPage = ref(1)
+const revokePageSize = ref(20)
+const revokeTotal = ref(0)
+const selectedRevokeApis = ref<ApiConfigAccessData[]>([])
+const revokeSearchParams = ref<Record<string, any>>({
+  apiPath: ''
 })
 
 const rules: FormRules = {
@@ -263,6 +402,115 @@ const handleDialogClose = () => {
   formRef.value?.resetFields()
 }
 
+// 授权管理相关方法
+const handleAuth = (row: ClientData) => {
+  currentClientId.value = row.id
+  authCurrentPage.value = 1
+  authSearchParams.value = { name: '' }
+  selectedApis.value = []
+  authDialogVisible.value = true
+  fetchUnauthorizedApis()
+}
+
+const fetchUnauthorizedApis = async () => {
+  authLoading.value = true
+  try {
+    const response = await getUnauthorizedApis(currentClientId.value, authCurrentPage.value - 1, authPageSize.value, authSearchParams.value.name)
+    unauthorizedApiList.value = response.data.data.data
+    authTotal.value = response.data.data.pageInfo.totalRows
+  } catch (error) {
+    ElMessage.error('获取未授权API列表失败')
+  } finally {
+    authLoading.value = false
+  }
+}
+
+const handleAuthPageChange = (page: number) => {
+  authCurrentPage.value = page
+  fetchUnauthorizedApis()
+}
+
+const handleAuthSelectionChange = (selection: ApiData[]) => {
+  selectedApis.value = selection
+}
+
+const handleGrant = async () => {
+  if (selectedApis.value.length === 0) {
+    ElMessage.warning('请选择要授权的API')
+    return
+  }
+
+  authSubmitLoading.value = true
+  try {
+    for (const api of selectedApis.value) {
+      await grantAccess(currentClientId.value, api.id)
+    }
+    ElMessage.success('授权成功')
+    authDialogVisible.value = false
+    fetchUnauthorizedApis()
+  } catch (error) {
+    ElMessage.error('授权失败')
+  } finally {
+    authSubmitLoading.value = false
+  }
+}
+
+// 取消授权相关方法
+const handleRevoke = (row: ClientData) => {
+  currentClientId.value = row.id
+  revokeCurrentPage.value = 1
+  revokeSearchParams.value = { apiPath: '' }
+  selectedRevokeApis.value = []
+  revokeDialogVisible.value = true
+  fetchAuthorizedApis()
+}
+
+const fetchAuthorizedApis = async () => {
+  revokeLoading.value = true
+  try {
+    const response = await getApiConfigAccessList(revokeCurrentPage.value - 1, revokePageSize.value, { 
+      clientId: currentClientId.value, 
+      apiPath: revokeSearchParams.value.apiPath 
+    })
+    authorizedApiList.value = response.data.data.data
+    revokeTotal.value = response.data.data.pageInfo.totalRows
+  } catch (error) {
+    ElMessage.error('获取已授权API列表失败')
+  } finally {
+    revokeLoading.value = false
+  }
+}
+
+const handleRevokePageChange = (page: number) => {
+  revokeCurrentPage.value = page
+  fetchAuthorizedApis()
+}
+
+const handleRevokeSelectionChange = (selection: ApiConfigAccessData[]) => {
+  selectedRevokeApis.value = selection
+}
+
+const handleRevokeSubmit = async () => {
+  if (selectedRevokeApis.value.length === 0) {
+    ElMessage.warning('请选择要取消授权的API')
+    return
+  }
+
+  revokeSubmitLoading.value = true
+  try {
+    for (const access of selectedRevokeApis.value) {
+      await revokeAccess(access.id)
+    }
+    ElMessage.success('取消授权成功')
+    revokeDialogVisible.value = false
+    fetchAuthorizedApis()
+  } catch (error) {
+    ElMessage.error('取消授权失败')
+  } finally {
+    revokeSubmitLoading.value = false
+  }
+}
+
 onMounted(() => {
   fetchList()
 })
@@ -271,5 +519,20 @@ onMounted(() => {
 <style scoped>
 .client-container {
   padding: 20px;
+}
+
+.auth-dialog,
+.revoke-dialog {
+  padding: 20px 0;
+}
+
+.search-bar {
+  margin-bottom: 20px;
+}
+
+.pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>
