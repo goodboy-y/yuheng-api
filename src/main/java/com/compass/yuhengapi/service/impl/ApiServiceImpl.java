@@ -35,6 +35,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 
@@ -130,66 +131,61 @@ public class ApiServiceImpl implements ApiService {
         }
     }
 
-    private ApiSql buildSqlFromRequest(HttpServletRequest request, ApiConfig config) {
+    /**
+     * 参数类型转换
+     */
+    private Object convertParamValue(Object value, String type) {
+        if ("int".equals(type)) {
+            return Long.parseLong(value.toString());
+        } else if ("double".equals(type)) {
+            return Double.parseDouble(value.toString());
+        }
+        return value.toString();
+    }
+
+    /**
+     * 构建 SQL 语句和参数（核心方法）
+     * @param config API 配置
+     * @param paramProvider 参数值提供函数，输入参数名，返回参数值
+     * @return 构建好的 SQL 和参数，如果参数缺失则返回 null
+     */
+    private ApiSql buildSql(ApiConfig config, Function<String, Object> paramProvider) {
         JSONObject jsonObject = JSON.parseObject(config.getSql_param());
         String sql = jsonObject.getString("sql");
         JSONArray requestParams = jsonObject.getJSONArray("params");
+        
         if (requestParams == null) {
             return new ApiSql(sql, new Object[]{});
         }
+        
         Object[] params = new Object[requestParams.size()];
         for (int i = 0; i < requestParams.size(); i++) {
             JSONObject jo = requestParams.getJSONObject(i);
             String name = jo.getString("name");
             String type = jo.getString("type");
-            String old = "#{" + name + "}";
-            sql = sql.replace(old, "?");
-            String value = request.getParameter(StringUtils.substringBefore(name, ":"));
+            
+            // 替换占位符
+            sql = sql.replace("#{" + name + "}", "?");
+            
+            // 获取参数值（通过函数式参数）
+            String paramName = StringUtils.substringBefore(name, ":");
+            Object value = paramProvider.apply(paramName);
             if (value == null) {
                 return null;
             }
-            if ("int".equals(type)) {
-                params[i] = Long.parseLong(value);
-            } else if ("double".equals(type)) {
-                params[i] = Double.parseDouble(value);
-            } else {
-                params[i] = value;
-            }
+            
+            // 类型转换
+            params[i] = convertParamValue(value, type);
         }
         return new ApiSql(sql, params);
     }
 
+    private ApiSql buildSqlFromRequest(HttpServletRequest request, ApiConfig config) {
+        return buildSql(config, request::getParameter);
+    }
+
     private ApiSql buildSqlFromParams(Map<String, Object> params, ApiConfig config) {
-        JSONObject jsonObject = JSON.parseObject(config.getSql_param());
-        String sql = jsonObject.getString("sql");
-        JSONArray requestParams = jsonObject.getJSONArray("params");
-        if (requestParams == null) {
-            return new ApiSql(sql, new Object[]{});
-        }
-        Object[] sqlParams = new Object[requestParams.size()];
-        for (int i = 0; i < requestParams.size(); i++) {
-            JSONObject jo = requestParams.getJSONObject(i);
-            String name = jo.getString("name");
-            String type = jo.getString("type");
-            String old = "#{" + name + "}";
-            sql = sql.replace(old, "?");
-
-            // 获取参数值
-            Object value = params.get(StringUtils.substringBefore(name, ":"));
-            if (value == null) {
-                return null;
-            }
-
-            // 转换参数类型
-            if ("int".equals(type)) {
-                sqlParams[i] = Long.parseLong(value.toString());
-            } else if ("double".equals(type)) {
-                sqlParams[i] = Double.parseDouble(value.toString());
-            } else {
-                sqlParams[i] = value.toString();
-            }
-        }
-        return new ApiSql(sql, sqlParams);
+        return buildSql(config, params::get);
     }
 
     private Result<Object> executeSql(ApiSql apiSql, ApiDatasource datasource, Map<String, Object> requestParams, Map<String, com.compass.yuhengapi.plugin.Plugin> plugins) {
