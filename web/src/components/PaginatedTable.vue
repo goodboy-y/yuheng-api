@@ -57,12 +57,7 @@
         </el-table-column>
         <el-table-column label="操作" :width="actionsWidth">
           <template #default="scope">
-            <el-button v-if="showView" size="small" @click="handleView(scope.row)">查看</el-button>
-            <el-button v-if="showEdit" size="small" type="primary" @click="handleEdit(scope.row)">修改</el-button>
-            <el-button v-if="showTest" size="small" type="success" @click="handleTest(scope.row)">测试连接</el-button>
-            <el-button v-if="showAuth" size="small" type="warning" @click="handleAuth(scope.row)">授权管理</el-button>
-            <el-button v-if="showRevoke" size="small" type="info" @click="handleRevoke(scope.row)">取消授权</el-button>
-            <el-button v-if="showDelete" size="small" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+            <slot name="actions" :row="scope.row"></slot>
           </template>
         </el-table-column>
       </el-table>
@@ -109,35 +104,17 @@ interface Props {
   currentPage: number
   pageSize: number
   showAdd?: boolean
-  showView?: boolean
-  showEdit?: boolean
-  showTest?: boolean
-  showDelete?: boolean
-  showAuth?: boolean
-  showRevoke?: boolean
   actionsWidth?: number | string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   searchFields: () => [],
   showAdd: true,
-  showView: true,
-  showEdit: true,
-  showTest: false,
-  showDelete: true,
-  showAuth: false,
-  showRevoke: false,
   actionsWidth: 400
 })
 
 const emit = defineEmits<{
   add: []
-  view: [row: any]
-  edit: [row: any]
-  test: [row: any]
-  delete: [row: any]
-  auth: [row: any]
-  revoke: [row: any]
   'update:page': [page: number, pageSize: number]
   search: [params: Record<string, any>]
   reset: []
@@ -157,30 +134,6 @@ watch(() => props.searchFields, (newFields) => {
 
 const handleAdd = () => {
   emit('add')
-}
-
-const handleView = (row: any) => {
-  emit('view', row)
-}
-
-const handleEdit = (row: any) => {
-  emit('edit', row)
-}
-
-const handleTest = (row: any) => {
-  emit('test', row)
-}
-
-const handleDelete = (row: any) => {
-  emit('delete', row)
-}
-
-const handleAuth = (row: any) => {
-  emit('auth', row)
-}
-
-const handleRevoke = (row: any) => {
-  emit('revoke', row)
 }
 
 const handleSizeChange = (size: number) => {

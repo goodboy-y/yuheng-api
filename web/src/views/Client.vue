@@ -9,19 +9,19 @@
       :total="total"
       :current-page="currentPage"
       :page-size="pageSize"
-      :show-test="false"
-      :show-auth="true"
-      :show-revoke="true"
       @add="handleAdd"
-      @view="handleView"
-      @edit="handleEdit"
-      @delete="handleDelete"
       @update:page="handlePageChange"
       @search="handleSearch"
       @reset="handleReset"
-      @auth="handleAuth"
-      @revoke="handleRevoke"
-    />
+    >
+      <template #actions="{ row }">
+        <el-button size="small" @click="handleView(row)">查看</el-button>
+        <el-button size="small" type="primary" @click="handleEdit(row)">修改</el-button>
+        <el-button size="small" type="warning" @click="handleAuth(row)">授权管理</el-button>
+        <el-button size="small" type="info" @click="handleRevoke(row)">取消授权</el-button>
+        <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+      </template>
+    </PaginatedTable>
 
     <el-dialog
       v-model="dialogVisible"

@@ -10,13 +10,15 @@
       :current-page="currentPage"
       :page-size="pageSize"
       :show-add="true"
-      :show-test="false"
       @add="handleAdd"
-      @delete="handleRevoke"
       @update:page="handlePageChange"
       @search="handleSearch"
       @reset="handleReset"
-    />
+    >
+      <template #actions="{ row }">
+        <el-button size="small" type="danger" @click="handleRevoke(row)">删除</el-button>
+      </template>
+    </PaginatedTable>
 
     <el-dialog
       v-model="dialogVisible"

@@ -1,9 +1,16 @@
 <template>
   <div class="api-container">
     <PaginatedTable title="API管理" :columns="columns" :search-fields="searchFields" :table-data="apiList"
-      :loading="loading" :total="total" :current-page="currentPage" :page-size="pageSize" :show-test="true"
-      @add="handleAdd" @view="handleView" @edit="handleEdit" @delete="handleDelete" @test="handleTest" @update:page="handlePageChange"
-      @search="handleSearch" @reset="handleReset" />
+      :loading="loading" :total="total" :current-page="currentPage" :page-size="pageSize"
+      @add="handleAdd" @update:page="handlePageChange"
+      @search="handleSearch" @reset="handleReset">
+      <template #actions="{ row }">
+        <el-button size="small" @click="handleView(row)">查看</el-button>
+        <el-button size="small" type="primary" @click="handleEdit(row)">修改</el-button>
+        <el-button size="small" type="success" @click="handleTest(row)">测试连接</el-button>
+        <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+      </template>
+    </PaginatedTable>
 
     <el-dialog v-model="dialogVisible" :title="dialogTitle" :fullscreen="true" @close="handleDialogClose">
       <el-form :model="formData" :rules="rules" ref="formRef" label-width="100px">

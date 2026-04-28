@@ -9,16 +9,18 @@
       :total="total"
       :current-page="currentPage"
       :page-size="pageSize"
-      :show-test="true"
       @add="handleAdd"
-      @view="handleView"
-      @edit="handleEdit"
-      @test="handleTest"
-      @delete="handleDelete"
       @update:page="handlePageChange"
       @search="handleSearch"
       @reset="handleReset"
-    />
+    >
+      <template #actions="{ row }">
+        <el-button size="small" @click="handleView(row)">查看</el-button>
+        <el-button size="small" type="primary" @click="handleEdit(row)">修改</el-button>
+        <el-button size="small" type="success" @click="handleTest(row)">测试连接</el-button>
+        <el-button size="small" type="danger" @click="handleDelete(row)">删除</el-button>
+      </template>
+    </PaginatedTable>
 
     <el-dialog
       v-model="dialogVisible"
