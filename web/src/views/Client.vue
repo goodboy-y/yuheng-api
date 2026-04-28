@@ -86,10 +86,12 @@
         </div>
 
         <el-table
+          ref="authTableRef"
           :data="unauthorizedApiList"
           style="width: 100%"
           v-loading="authLoading"
           @selection-change="handleAuthSelectionChange"
+          @row-click="handleAuthRowClick"
         >
           <el-table-column type="selection" width="55"></el-table-column>
           <el-table-column prop="name" label="API名称"></el-table-column>
@@ -135,10 +137,12 @@
         </div>
 
         <el-table
+          ref="revokeTableRef"
           :data="authorizedApiList"
           style="width: 100%"
           v-loading="revokeLoading"
           @selection-change="handleRevokeSelectionChange"
+          @row-click="handleRevokeRowClick"
         >
           <el-table-column type="selection" width="55"></el-table-column>
           <el-table-column prop="apiConfig.name" label="API名称"></el-table-column>
@@ -166,7 +170,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElTable } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import PaginatedTable from '../components/PaginatedTable.vue'
 import {
@@ -265,6 +269,10 @@ const selectedRevokeApis = ref<ApiConfigAccessData[]>([])
 const revokeSearchParams = ref<Record<string, any>>({
   apiPath: ''
 })
+
+// 表格引用
+const authTableRef = ref<InstanceType<typeof ElTable>>()
+const revokeTableRef = ref<InstanceType<typeof ElTable>>()
 
 const rules: FormRules = {
   name: [{ required: true, message: '请输入客户端名称', trigger: 'blur' }],
@@ -434,6 +442,20 @@ const handleAuthSelectionChange = (selection: ApiData[]) => {
   selectedApis.value = selection
 }
 
+const handleAuthRowClick = (row: ApiData) => {
+  if (authTableRef.value) {
+    // 检查当前行是否已选中
+    const isSelected = selectedApis.value.some(item => item.id === row.id)
+    if (isSelected) {
+      // 如果已选中，则取消选中
+      authTableRef.value.toggleRowSelection(row, false)
+    } else {
+      // 如果未选中，则选中
+      authTableRef.value.toggleRowSelection(row, true)
+    }
+  }
+}
+
 const handleGrant = async () => {
   if (selectedApis.value.length === 0) {
     ElMessage.warning('请选择要授权的API')
@@ -488,6 +510,20 @@ const handleRevokePageChange = (page: number) => {
 
 const handleRevokeSelectionChange = (selection: ApiConfigAccessData[]) => {
   selectedRevokeApis.value = selection
+}
+
+const handleRevokeRowClick = (row: ApiConfigAccessData) => {
+  if (revokeTableRef.value) {
+    // 检查当前行是否已选中
+    const isSelected = selectedRevokeApis.value.some(item => item.id === row.id)
+    if (isSelected) {
+      // 如果已选中，则取消选中
+      revokeTableRef.value.toggleRowSelection(row, false)
+    } else {
+      // 如果未选中，则选中
+      revokeTableRef.value.toggleRowSelection(row, true)
+    }
+  }
 }
 
 const handleRevokeSubmit = async () => {
