@@ -32,7 +32,7 @@ docker run -d --name=yuheng-api\
   -e SPRING_DATASOURCE_URL='jdbc:oracle:thin:@172.17.0.1:1521/orclpdb1' \
   -e SPRING_DATASOURCE_USERNAME=eams_dev \
   -e SPRING_DATASOURCE_PASSWORD=eams \
-  your-image:tag
+  yuhengapi:1.0
   ```
 2. jar包安装：略
 

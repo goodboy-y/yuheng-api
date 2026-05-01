@@ -1,5 +1,8 @@
 -- MySQL建表语句
 -- 生成时间: 2026-04-19
+CREATE DATABASE yuheng
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_general_ci;
 
 -- api_account表
 CREATE TABLE IF NOT EXISTS `api_account` (
@@ -119,7 +122,7 @@ CREATE TABLE IF NOT EXISTS `api_plugin` (
   `name` VARCHAR(100) NOT NULL,
   `description` VARCHAR(500) DEFAULT NULL,
   `class_name` VARCHAR(255) NOT NULL,
-  `account_id` VARCHAR(255) NOT NULL,
+  `account_id` VARCHAR(255),
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -131,7 +134,7 @@ CREATE TABLE IF NOT EXISTS `api_config_plugin` (
   `id` VARCHAR(36) NOT NULL,
   `api_config_id` VARCHAR(36) NOT NULL,
   `api_plugin_id` VARCHAR(36) NOT NULL,
-  `account_id` VARCHAR(255) NOT NULL,
+  `account_id` VARCHAR(255),
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
@@ -141,3 +144,7 @@ CREATE TABLE IF NOT EXISTS `api_config_plugin` (
   CONSTRAINT `fk_api_config_plugin_api_config` FOREIGN KEY (`api_config_id`) REFERENCES `api_config` (`id`) ON DELETE CASCADE,
   CONSTRAINT `fk_api_config_plugin_api_plugin` FOREIGN KEY (`api_plugin_id`) REFERENCES `api_plugin` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 插入初始用户密码 admin/adminadmin
+insert into api_account(username, password)
+values ('admin','$2a$10$zPPeBr69r09HK1bQwDMHm.Df5r0SrdXcd6wnKyJD6tcOW35v9050G')
