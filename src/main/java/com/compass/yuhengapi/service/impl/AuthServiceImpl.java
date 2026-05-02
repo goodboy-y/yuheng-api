@@ -7,7 +7,7 @@ import com.compass.yuhengapi.model.entities.ApiAccount;
 import com.compass.yuhengapi.repo.ApiAccountRepository;
 import com.compass.yuhengapi.service.AuthService;
 import lombok.AllArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -30,8 +30,8 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public void changePassword(ChangePasswordDto changePassword) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+    @CacheEvict(value = "apiAccount", key = "#username")
+    public void changePassword(String username, ChangePasswordDto changePassword) {
         ApiAccount apiAccount = apiAccountRepository.findByUsername(username);
         if (apiAccount == null) {
             throw new APIException("用户不存在");

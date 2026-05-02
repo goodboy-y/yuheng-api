@@ -7,6 +7,6 @@ public interface AuthService {
 
     void login(LoginDto login);
 
-    void changePassword(ChangePasswordDto changePassword);
+    void changePassword(String username, ChangePasswordDto changePassword);
 
 }

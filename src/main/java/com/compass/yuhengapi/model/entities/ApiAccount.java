@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Table(name = "api_account", indexes = {@Index(name = "idx_account_1", columnList = "username", unique = true)})
 @Getter
 @Setter
-public class ApiAccount {
+public class ApiAccount implements java.io.Serializable{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY) // 或者其他生成策略

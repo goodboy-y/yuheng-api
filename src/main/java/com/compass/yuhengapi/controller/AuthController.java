@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -48,7 +49,8 @@ public class AuthController {
 
     @PostMapping("/changePassword")
     public Result<Void> changePassword(@RequestBody ChangePasswordDto changePassword) {
-        authService.changePassword(changePassword);
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        authService.changePassword(username, changePassword);
         return Result.success(null);
     }
 
