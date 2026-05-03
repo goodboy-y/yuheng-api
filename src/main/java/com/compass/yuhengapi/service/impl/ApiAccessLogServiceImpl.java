@@ -1,6 +1,7 @@
 package com.compass.yuhengapi.service.impl;
 
 import com.compass.yuhengapi.common.util.PageList;
+import com.compass.yuhengapi.model.dto.ApiAccessLogQueryCmd;
 import com.compass.yuhengapi.model.entities.ApiAccessLog;
 import com.compass.yuhengapi.model.entities.ApiAccessLogArchive;
 import com.compass.yuhengapi.repo.ApiAccessLogArchiveRepository;
@@ -8,6 +9,7 @@ import com.compass.yuhengapi.repo.ApiAccessLogRepository;
 import com.compass.yuhengapi.service.ApiAccessLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -48,9 +50,9 @@ public class ApiAccessLogServiceImpl implements ApiAccessLogService {
     }
 
     @Override
-    public PageList<ApiAccessLog> search(LocalDateTime startTime, LocalDateTime endTime, String path, String clientId, int page, int pageSize) {
-        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "accessTime"));
-        Specification<ApiAccessLog> spec = buildSpecification(startTime, endTime, path, clientId);
+    public PageList<ApiAccessLog> search(ApiAccessLogQueryCmd queryCmd) {
+        Pageable pageable = queryCmd.toPageable();
+        Specification<ApiAccessLog> spec = buildSpecification(queryCmd);
         Page<ApiAccessLog> result = apiAccessLogRepository.findAll(spec, pageable);
         return PageList.of(result, pageable);
     }
@@ -67,7 +69,8 @@ public class ApiAccessLogServiceImpl implements ApiAccessLogService {
 
     @Override
     @Transactional
-    public int archive(LocalDateTime beforeTime) {
+    public int archive(ApiAccessLogQueryCmd queryCmd) {
+        LocalDateTime beforeTime = queryCmd.getBeforeTime();
         int totalArchived = 0;
         List<ApiAccessLog> batch = apiAccessLogRepository.findPageByAccessTimeBefore(beforeTime, PageRequest.of(0, BATCH_SIZE)).getContent();
 
@@ -86,9 +89,9 @@ public class ApiAccessLogServiceImpl implements ApiAccessLogService {
     }
 
     @Override
-    public PageList<ApiAccessLogArchive> getArchiveLogs(LocalDateTime startTime, LocalDateTime endTime, String path, String clientId, int page, int pageSize) {
-        Pageable pageable = PageRequest.of(page, pageSize, Sort.by(Sort.Direction.DESC, "accessTime"));
-        Specification<ApiAccessLogArchive> spec = buildArchiveSpecification(startTime, endTime, path, clientId);
+    public PageList<ApiAccessLogArchive> getArchiveLogs(ApiAccessLogQueryCmd queryCmd) {
+        Pageable pageable = queryCmd.toPageable();
+        Specification<ApiAccessLogArchive> spec = buildArchiveSpecification(queryCmd);
         Page<ApiAccessLogArchive> result = apiAccessLogArchiveRepository.findAll(spec, pageable);
         return PageList.of(result, pageable);
     }
@@ -98,8 +101,10 @@ public class ApiAccessLogServiceImpl implements ApiAccessLogService {
     public Map<String, Object> autoArchive() {
         Map<String, Object> result = new HashMap<>();
         LocalDateTime beforeTime = LocalDateTime.now().minusMonths(3);
+        ApiAccessLogQueryCmd queryCmd = new ApiAccessLogQueryCmd();
+        queryCmd.setBeforeTime(beforeTime);
         try {
-            int count = archive(beforeTime);
+            int count = archive(queryCmd);
             result.put("success", true);
             result.put("archivedCount", count);
             result.put("beforeTime", beforeTime.toString());
@@ -111,47 +116,47 @@ public class ApiAccessLogServiceImpl implements ApiAccessLogService {
         return result;
     }
 
-    private Specification<ApiAccessLog> buildSpecification(LocalDateTime startTime, LocalDateTime endTime, String path, String clientId) {
+    private Specification<ApiAccessLog> buildSpecification(ApiAccessLogQueryCmd queryCmd) {
         Specification<ApiAccessLog> spec = Specification.unrestricted();
 
-        if (startTime != null) {
+        if (queryCmd.getStartTime() != null) {
             spec = spec.and((root, query, criteriaBuilder) ->
-                    criteriaBuilder.greaterThanOrEqualTo(root.get("accessTime"), startTime));
+                    criteriaBuilder.greaterThanOrEqualTo(root.get("accessTime"), queryCmd.getStartTime()));
         }
-        if (endTime != null) {
+        if (queryCmd.getEndTime() != null) {
             spec = spec.and((root, query, criteriaBuilder) ->
-                    criteriaBuilder.lessThanOrEqualTo(root.get("accessTime"), endTime));
+                    criteriaBuilder.lessThanOrEqualTo(root.get("accessTime"), queryCmd.getEndTime()));
         }
-        if (path != null && !path.isBlank()) {
+        if (StringUtils.isNoneBlank(queryCmd.getPath())) {
             spec = spec.and((root, query, criteriaBuilder) ->
-                    criteriaBuilder.like(root.get("path"), "%" + path + "%"));
+                    criteriaBuilder.like(root.get("path"), "%" + queryCmd.getPath() + "%"));
         }
-        if (clientId != null && !clientId.isBlank()) {
+        if (StringUtils.isNoneBlank(queryCmd.getClientId())) {
             spec = spec.and((root, query, criteriaBuilder) ->
-                    criteriaBuilder.equal(root.get("clientId"), clientId));
+                    criteriaBuilder.equal(root.get("clientId"), queryCmd.getClientId()));
         }
 
         return spec;
     }
 
-    private Specification<ApiAccessLogArchive> buildArchiveSpecification(LocalDateTime startTime, LocalDateTime endTime, String path, String clientId) {
+    private Specification<ApiAccessLogArchive> buildArchiveSpecification(ApiAccessLogQueryCmd queryCmd) {
         Specification<ApiAccessLogArchive> spec = Specification.unrestricted();
 
-        if (startTime != null) {
+        if (queryCmd.getStartTime() != null) {
             spec = spec.and((root, query, criteriaBuilder) ->
-                    criteriaBuilder.greaterThanOrEqualTo(root.get("accessTime"), startTime));
+                    criteriaBuilder.greaterThanOrEqualTo(root.get("accessTime"), queryCmd.getStartTime()));
         }
-        if (endTime != null) {
+        if (queryCmd.getEndTime() != null) {
             spec = spec.and((root, query, criteriaBuilder) ->
-                    criteriaBuilder.lessThanOrEqualTo(root.get("accessTime"), endTime));
+                    criteriaBuilder.lessThanOrEqualTo(root.get("accessTime"), queryCmd.getEndTime()));
         }
-        if (path != null && !path.isBlank()) {
+        if (StringUtils.isNoneBlank(queryCmd.getPath())) {
             spec = spec.and((root, query, criteriaBuilder) ->
-                    criteriaBuilder.like(root.get("path"), "%" + path + "%"));
+                    criteriaBuilder.like(root.get("path"), "%" + queryCmd.getPath() + "%"));
         }
-        if (clientId != null && !clientId.isBlank()) {
+        if (StringUtils.isNoneBlank(queryCmd.getClientId())) {
             spec = spec.and((root, query, criteriaBuilder) ->
-                    criteriaBuilder.equal(root.get("clientId"), clientId));
+                    criteriaBuilder.equal(root.get("clientId"), queryCmd.getClientId()));
         }
 
         return spec;

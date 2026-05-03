@@ -16,6 +16,6 @@ public class QueryCmd {
 
 
     public Pageable toPageable() {
-        return PageRequest.of(Math.max(page - 1, 0), pageSize, Sort.by("id"));
+        return PageRequest.of(Math.max(page - 1, 0), pageSize);
     }
 }
