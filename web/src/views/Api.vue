@@ -649,12 +649,37 @@ const handleParseSqlFields = async () => {
     const response = await parseSqlFields(formData.value.datasourceId, formData.value.sqlParam.sql)
     if (response.data && response.data.data && response.data.data.length > 0) {
       const fields = response.data.data
-      formData.value.fieldMappings = fields.map((field: string) => ({
-        apiConfigId: formData.value.id || '',
-        fieldName: field,
-        displayName: field,
-        columnWidth: undefined
-      }))
+      
+      // 获取现有的字段映射配置
+      const existingMappings = formData.value.fieldMappings || []
+      
+      // 创建一个Map用于快速查找现有映射
+      const existingMappingsMap = new Map<string, any>()
+      existingMappings.forEach(mapping => {
+        existingMappingsMap.set(mapping.fieldName, mapping)
+      })
+      
+      // 构建新的字段映射列表
+      const newMappings: any[] = []
+      
+      // 遍历解析到的字段
+      fields.forEach((fieldName: string) => {
+        if (existingMappingsMap.has(fieldName)) {
+          // 如果字段已存在，保留现有的映射配置
+          newMappings.push(existingMappingsMap.get(fieldName))
+        } else {
+          // 如果是新字段，创建新的映射配置
+          newMappings.push({
+            apiConfigId: formData.value.id || '',
+            fieldName: fieldName,
+            displayName: fieldName,
+            columnWidth: undefined
+          })
+        }
+      })
+      
+      // 更新字段映射
+      formData.value.fieldMappings = newMappings
       ElMessage.success(`成功解析${fields.length}个字段`)
     } else {
       ElMessage.warning('未解析到任何字段')
