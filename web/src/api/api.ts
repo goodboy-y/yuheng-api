@@ -23,6 +23,15 @@ export interface ApiData {
   datasourceId: string
   sqlParam: SqlParam
   status: number
+  plugins?: Array<{
+    apiPlugin: {
+      id: string
+      name: string
+      description: string
+      className: string
+      accountId: string
+    }
+  }>
 }
 
 export const getApiList = (page: number = 0, pageSize: number = 20, params: Record<string, any> = {}) => {
@@ -76,6 +85,7 @@ export const saveFieldMappings = (apiConfigId: string, mappings: ApiFieldMapping
 export interface ApiConfigWithMappings {
   apiConfig: ApiData
   fieldMappings: ApiFieldMapping[]
+  pluginIds: string[]
 }
 
 export const addApiWithMappings = (data: ApiConfigWithMappings) => {
@@ -83,7 +93,16 @@ export const addApiWithMappings = (data: ApiConfigWithMappings) => {
 }
 
 export const updateApiWithMappings = (data: ApiConfigWithMappings) => {
-  return request.post<ApiResponse<any>>('/apiConfig/update-with-mappings', data)
+  return request.post<ApiResponse<string>>('/apiConfig/update-with-mappings', data)
+}
+
+export const getApiDetailFull = (apiId: string) => {
+  return request.get<ApiResponse<ApiConfigDetail>>(`/apiConfig/detail-full/${apiId}`)
+}
+
+export interface ApiConfigDetail {
+  apiConfig: ApiData
+  fieldMappings: ApiFieldMapping[]
 }
 
 export const parseSqlFields = (datasourceId: string, sql: string) => {

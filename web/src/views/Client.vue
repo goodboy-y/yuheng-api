@@ -75,7 +75,7 @@
         <div class="search-bar">
           <el-input
             v-model="authSearchParams.name"
-            placeholder="请输入API名称"
+            placeholder="请输入名称"
             style="width: 300px"
             @keyup.enter="fetchUnauthorizedApis"
           >
@@ -94,7 +94,7 @@
           @row-click="handleAuthRowClick"
         >
           <el-table-column type="selection" width="55"></el-table-column>
-          <el-table-column prop="name" label="API名称"></el-table-column>
+          <el-table-column prop="name" label="名称"></el-table-column>
           <el-table-column prop="path" label="请求路径"></el-table-column>
           <el-table-column prop="method" label="请求方法"></el-table-column>
           <el-table-column prop="datasourceName" label="数据源"></el-table-column>
@@ -145,7 +145,7 @@
           @row-click="handleRevokeRowClick"
         >
           <el-table-column type="selection" width="55"></el-table-column>
-          <el-table-column prop="apiConfig.name" label="API名称"></el-table-column>
+          <el-table-column prop="apiConfig.name" label="名称"></el-table-column>
           <el-table-column prop="apiConfig.path" label="请求路径"></el-table-column>
           <el-table-column prop="apiConfig.method" label="请求方法"></el-table-column>
         </el-table>

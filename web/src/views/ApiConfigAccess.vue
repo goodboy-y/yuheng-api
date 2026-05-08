@@ -73,7 +73,7 @@ import { getApiList, type ApiData } from '../api/api'
 const columns = [
   { prop: 'clientName', label: '客户端名称', formatter: (row: ApiConfigAccessData) => row.client?.name || '-' },
   { prop: 'clientId', label: '客户端ID', formatter: (row: ApiConfigAccessData) => row.client?.clientId || '-' },
-  { prop: 'apiName', label: 'API名称', formatter: (row: ApiConfigAccessData) => row.apiConfig?.name || '-' },
+  { prop: 'apiName', label: '名称', formatter: (row: ApiConfigAccessData) => row.apiConfig?.name || '-' },
   { prop: 'apiPath', label: 'API路径', formatter: (row: ApiConfigAccessData) => row.apiConfig?.path || '-' },
   { prop: 'createTime', label: '授权时间' }
 ]

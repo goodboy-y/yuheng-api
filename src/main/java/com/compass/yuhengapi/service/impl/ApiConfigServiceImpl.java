@@ -5,11 +5,14 @@ import com.compass.yuhengapi.common.util.PageList;
 import com.compass.yuhengapi.model.bean.ApiParam;
 import com.compass.yuhengapi.model.bean.SqlParam;
 import com.compass.yuhengapi.model.dto.ApiConfigQueryCmd;
+import com.compass.yuhengapi.model.dto.ApiConfigDetailDto;
 import com.compass.yuhengapi.model.entities.ApiConfig;
+import com.compass.yuhengapi.model.entities.ApiFieldMapping;
 import com.compass.yuhengapi.repo.ApiClientRepository;
 import com.compass.yuhengapi.repo.ApiConfigRepository;
 import com.compass.yuhengapi.repo.ApiFieldMappingRepository;
 import com.compass.yuhengapi.service.ApiConfigService;
+import com.compass.yuhengapi.service.ApiPluginService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -34,6 +37,7 @@ public class ApiConfigServiceImpl implements ApiConfigService {
     private final ApiConfigRepository apiConfigRepository;
     private final ApiFieldMappingRepository fieldMappingRepository;
     private final ApiClientRepository apiClientRepository;
+    private final ApiPluginService apiPluginService;
 
     private final Pattern pattern = Pattern.compile("#\\{([^}]*)}");
 
@@ -133,7 +137,7 @@ public class ApiConfigServiceImpl implements ApiConfigService {
 
     @Transactional
     @Override
-    public String addWithMappings(ApiConfig apiConfig, List<com.compass.yuhengapi.model.entities.ApiFieldMapping> fieldMappings) {
+    public String addWithMappings(ApiConfig apiConfig, List<com.compass.yuhengapi.model.entities.ApiFieldMapping> fieldMappings, List<String> pluginIds) {
         int size = apiConfigRepository.selectCountByPath(apiConfig.getPath());
         if (size > 0) {
             throw new RuntimeException("该路径已被使用，请修改请求路径再保存");
@@ -144,13 +148,18 @@ public class ApiConfigServiceImpl implements ApiConfigService {
             // 保存字段映射
             saveFieldMappings(apiConfig.getId(), fieldMappings);
             
+            // 保存插件配置
+            if (pluginIds != null && !pluginIds.isEmpty()) {
+                apiPluginService.saveApiConfigPlugins(apiConfig.getId(), pluginIds);
+            }
+            
             return apiConfig.getId();
         }
     }
 
     @Transactional
     @Override
-    public void updateWithMappings(ApiConfig apiConfig, List<com.compass.yuhengapi.model.entities.ApiFieldMapping> fieldMappings) {
+    public void updateWithMappings(ApiConfig apiConfig, List<com.compass.yuhengapi.model.entities.ApiFieldMapping> fieldMappings, List<String> pluginIds) {
         int size = apiConfigRepository.selectCountByPathWhenUpdate(apiConfig.getPath(), apiConfig.getId());
         if (size > 0) {
             throw new RuntimeException("该路径已被使用，请修改请求路径再保存");
@@ -160,6 +169,9 @@ public class ApiConfigServiceImpl implements ApiConfigService {
             
             // 保存字段映射
             saveFieldMappings(apiConfig.getId(), fieldMappings);
+            
+            // 保存插件配置
+            apiPluginService.saveApiConfigPlugins(apiConfig.getId(), pluginIds);
         }
     }
 
@@ -200,6 +212,23 @@ public class ApiConfigServiceImpl implements ApiConfigService {
         }
 
         return PageList.of(page, pageable);
+    }
+
+    @Override
+    public ApiConfigDetailDto getApiConfigDetail(String apiConfigId) {
+        ApiConfigDetailDto dto = new ApiConfigDetailDto();
+        
+        // 获取API配置信息
+        ApiConfig apiConfig = apiConfigRepository.findById(apiConfigId).orElse(null);
+        if (apiConfig != null) {
+            dto.setApiConfig(apiConfig);
+            
+            // 获取字段映射信息
+            List<ApiFieldMapping> fieldMappings = fieldMappingRepository.findByApiConfigId(apiConfigId);
+            dto.setFieldMappings(fieldMappings);
+        }
+        
+        return dto;
     }
 
 }

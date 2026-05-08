@@ -14,18 +14,18 @@
 
     <el-dialog v-model="dialogVisible" :title="dialogTitle" :fullscreen="true" @close="handleDialogClose">
       <el-form :model="formData" :rules="rules" ref="formRef" label-width="100px">
-        <el-form-item label="API名称" prop="name">
-          <el-input v-model="formData.name" placeholder="请输入API名称"></el-input>
+        <el-form-item label="名称" prop="name">
+          <el-input v-model="formData.name" placeholder="请输入名称"></el-input>
         </el-form-item>
-        <el-form-item label="路径" prop="path">
-          <el-input v-model="formData.path" placeholder="请输入路径"></el-input>
+        <el-form-item label="访问路径" prop="path">
+          <el-input v-model="formData.path" placeholder="请输入访问路径"></el-input>
         </el-form-item>
         <el-form-item label="数据源ID" prop="datasourceId">
           <el-select v-model="formData.datasourceId" placeholder="请选择数据源" style="width: 100%">
             <el-option v-for="ds in datasourceList" :key="ds.id" :label="ds.name" :value="ds.id" />
           </el-select>
         </el-form-item>
-        <el-form-item label="SQL参数" prop="sql_param">
+        <el-form-item label="SQL" prop="sql_param">
           <Codemirror v-model="formData.sqlParam.sql" :style="{ height: '200px', fontSize: '14px' }" :autofocus="true"
             :extensions="[sql()]" :theme="oneDark" :indent-with-tab="true" :tab-size="2" />
         </el-form-item>
@@ -96,28 +96,69 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="detailDialogVisible" title="API详情" width="600px">
+    <el-dialog v-model="detailDialogVisible" title="API详情" width="1200px">
       <el-descriptions :column="1" border>
-        <el-descriptions-item label="API名称">{{ detailData.name }}</el-descriptions-item>
-        <el-descriptions-item label="路径">{{ detailData.path }}</el-descriptions-item>
-        <el-descriptions-item label="数据源">{{ detailData.datasource.name }}</el-descriptions-item>
-        <el-descriptions-item label="SQL参数">{{ detailData.sqlParam.sql }}</el-descriptions-item>
-        <el-descriptions-item label="状态">{{ detailData.status === 1 ? '启用' : '禁用' }}</el-descriptions-item>
-        <el-descriptions-item label="备注">{{ detailData.note }}</el-descriptions-item>
+        <el-descriptions-item label="名称">{{ detailData.apiConfig.name }}</el-descriptions-item>
+        <el-descriptions-item label="访问路径">{{ detailData.apiConfig.path }}</el-descriptions-item>
+        <el-descriptions-item label="数据源">{{ detailData.apiConfig.datasource.name }}</el-descriptions-item>
+        <el-descriptions-item label="SQL">
+          <div style="max-height: 200px; overflow-y: auto; background: #f5f7fa; padding: 10px; border-radius: 4px; font-family: monospace;">
+            {{ detailData.apiConfig.sqlParam.sql }}
+          </div>
+        </el-descriptions-item>
+        <el-descriptions-item label="状态">{{ detailData.apiConfig.status === 1 ? '启用' : '禁用' }}</el-descriptions-item>
+        <el-descriptions-item label="备注">{{ detailData.apiConfig.note }}</el-descriptions-item>
       </el-descriptions>
+      
+      <!-- 插件配置 -->
+      <el-divider content-position="left">插件配置</el-divider>
+      <div v-if="detailData.apiConfig.plugins && detailData.apiConfig.plugins.length > 0">
+        <el-tag v-for="plugin in detailData.apiConfig.plugins" :key="plugin.apiPlugin.id" size="large" style="margin-right: 10px; margin-bottom: 10px;">
+          {{ plugin.apiPlugin.name }}
+          <el-tooltip effect="dark" :content="plugin.apiPlugin.description" placement="top">
+            <el-icon><InfoFilled /></el-icon>
+          </el-tooltip>
+        </el-tag>
+      </div>
+      <div v-else class="empty-tip">暂无插件配置</div>
+      
+      <!-- 字段映射配置 -->
+      <el-divider content-position="left">字段映射配置</el-divider>
+      <div v-if="detailData.fieldMappings && detailData.fieldMappings.length > 0">
+        <el-table :data="detailData.fieldMappings" border style="width: 100%" size="small">
+          <el-table-column prop="fieldName" label="原始字段名" width="200" />
+          <el-table-column prop="displayName" label="显示名称" />
+          <el-table-column prop="columnWidth" label="列宽" width="100" />
+        </el-table>
+      </div>
+      <div v-else class="empty-tip">暂无字段映射配置</div>
+      
       <template #footer>
         <el-button @click="detailDialogVisible = false">关闭</el-button>
       </template>
     </el-dialog>
     
     <!-- 测试API对话框 -->
-    <el-dialog v-model="testDialogVisible" title="测试API" width="800px">
+    <el-dialog v-model="testDialogVisible" title="测试API" width="1200px">
       <div v-if="testApiData" class="test-api-container">
         <div class="test-api-info">
           <h4>API信息</h4>
           <p><strong>名称:</strong> {{ testApiData.name }}</p>
-          <p><strong>路径:</strong> {{ testApiData.path }}</p>
-          <p><strong>SQL:</strong> <pre>{{ testApiData.sqlParam.sql }}</pre></p>
+          <p><strong>访问路径:</strong> {{ testApiData.path }}</p>
+          <p><strong>SQL:</strong> <pre style="max-height: 200px; overflow-y: auto; background: #f5f7fa; padding: 10px; border-radius: 4px;">{{ testApiData.sqlParam.sql }}</pre></p>
+        </div>
+        
+        <!-- 插件配置 -->
+        <div v-if="testApiData.plugins && testApiData.plugins.length > 0" class="test-api-info">
+          <h4>插件配置</h4>
+          <div class="plugin-tags">
+            <el-tag v-for="plugin in testApiData.plugins" :key="plugin.apiPlugin.id" size="large" style="margin-right: 10px; margin-bottom: 10px;">
+              {{ plugin.apiPlugin.name }}
+              <el-tooltip effect="dark" :content="plugin.apiPlugin.description" placement="top">
+                <el-icon><InfoFilled /></el-icon>
+              </el-tooltip>
+            </el-tag>
+          </div>
         </div>
         
         <el-form v-if="testApiData.sqlParam.params && testApiData.sqlParam.params.length > 0" ref="testFormRef" :model="testParams" label-width="100px" class="test-form">
@@ -154,38 +195,34 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { InfoFilled } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { Codemirror } from 'vue-codemirror'
 import { sql } from '@codemirror/lang-sql'
 import { oneDark } from '@codemirror/theme-one-dark'
 import PaginatedTable from '../components/PaginatedTable.vue'
 import { JsonViewer } from 'vue3-json-viewer'
-import {
-  getApiList,
+import { getApiList,
   deleteApi,
-  getApiDetail,
+  getApiDetailFull,
   testApi,
   exportApiTestData,
-  getFieldMappings,
   parseSqlFields,
   addApiWithMappings,
   updateApiWithMappings,
   type ApiData,
   type ApiSqlParam,
   type ApiFieldMapping,
-  type ApiConfigWithMappings
-} from '../api/api'
+  type ApiConfigWithMappings } from '../api/api'
 import { listDatasource, type Datasource } from '../api/datasource'
 import {
   getApiPluginList,
-  getApiConfigPlugins,
-  saveApiConfigPlugins,
   type ApiPluginData
 } from '../api/api-plugin'
 
 const columns = [
-  { prop: 'name', label: 'API名称' },
-  { prop: 'path', label: '路径' },
+  { prop: 'name', label: '名称' },
+  { prop: 'path', label: '访问路径' },
   {
     prop: 'datasource', label: '数据源',
     formatter: (_row: any, _column: any, cellValue: any) => {
@@ -193,7 +230,7 @@ const columns = [
     }
   },
   {
-    prop: 'sqlParam', label: 'SQL参数',
+    prop: 'sqlParam', label: 'SQL',
     formatter: (_row: any, _column: any, cellValue: any) => cellValue?.sql || String(cellValue)
   },
   {
@@ -205,7 +242,7 @@ const columns = [
 
 const searchFields = [
   { prop: 'name', label: '名称', type: 'input' as const },
-  { prop: 'path', label: '路径', type: 'input' as const },
+  { prop: 'path', label: '访问路径', type: 'input' as const },
   {
     prop: 'status',
     label: '状态',
@@ -265,21 +302,28 @@ const formData = ref<FormData>({
   fieldMappings: []
 })
 
-const detailData = ref<ApiData>({
-  id: '',
-  name: '',
-  note: '',
-  path: '',
-  datasource: {
+const detailData = ref<{
+  apiConfig: ApiData
+  fieldMappings: ApiFieldMapping[]
+}>({
+  apiConfig: {
     id: '',
-    name: ''
+    name: '',
+    note: '',
+    path: '',
+    datasource: {
+      id: '',
+      name: ''
+    },
+    datasourceId: '',
+    sqlParam: {
+      sql: '',
+      params: [] as ApiSqlParam[]
+    },
+    status: 1,
+    plugins: []
   },
-  datasourceId: '',
-  sqlParam: {
-    sql: '',
-    params: [] as ApiSqlParam[]
-  },
-  status: 1
+  fieldMappings: []
 })
 
 // 测试API相关变量
@@ -302,8 +346,8 @@ const toggleExpandAll = () => {
 }
 
 const rules: FormRules = {
-  name: [{ required: true, message: '请输入API名称', trigger: 'blur' }],
-  path: [{ required: true, message: '请输入路径', trigger: 'blur' }],
+  name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
+  path: [{ required: true, message: '请输入访问路径', trigger: 'blur' }],
   datasourceId: [{ required: true, message: '请输入数据源ID', trigger: 'blur' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
 }
@@ -357,7 +401,7 @@ const handleAdd = () => {
 
 const handleView = async (row: ApiData) => {
   try {
-    const response = await getApiDetail(row.id)
+    const response = await getApiDetailFull(row.id)
 
     if (response.data && response.data.data) {
       detailData.value = response.data.data
@@ -374,25 +418,28 @@ const handleView = async (row: ApiData) => {
 
 const handleEdit = async (row: ApiData) => {
   try {
-    const response = await getApiDetail(row.id)
+    const response = await getApiDetailFull(row.id)
 
     if (response.data && response.data.data) {
-      const data = response.data.data
+      const detail = response.data.data
+      const data = detail.apiConfig
       // 将datasource对象转换为datasourceId
       if (data.datasource) {
         data.datasourceId = data.datasource.id
       }
       formData.value = {
         ...data,
-        fieldMappings: []
+        fieldMappings: detail.fieldMappings
       }
       dialogTitle.value = '修改API'
       dialogVisible.value = true
 
-      // 加载字段映射配置
-      loadFieldMappings(data.id)
       // 加载插件配置
-      loadApiConfigPlugins(data.id)
+      if (data.plugins && data.plugins.length > 0) {
+        selectedPlugins.value = data.plugins.map((plugin: any) => plugin.apiPlugin.id)
+      } else {
+        selectedPlugins.value = []
+      }
     } else {
       console.error('API响应数据格式不正确:', response)
       ElMessage.error('获取API详情失败：数据格式不正确')
@@ -422,9 +469,9 @@ const handleDelete = async (row: ApiData) => {
 
 const handleTest = async (row: ApiData) => {
   try {
-    const response = await getApiDetail(row.id)
+    const response = await getApiDetailFull(row.id)
     if (response.data && response.data.data) {
-      testApiData.value = response.data.data
+      testApiData.value = response.data.data.apiConfig
       testParams.value = {}
       testResult.value = null
       testDialogVisible.value = true
@@ -575,29 +622,7 @@ const handlePageChange = (page: number, size: number) => {
   fetchList()
 }
 
-// 加载字段映射
-const loadFieldMappings = async (apiConfigId: string) => {
-  try {
-    const response = await getFieldMappings(apiConfigId)
-    if (response.data && response.data.data) {
-      formData.value.fieldMappings = response.data.data
-    }
-  } catch (error) {
-    console.error('获取字段映射失败:', error)
-  }
-}
 
-// 加载API配置的插件
-const loadApiConfigPlugins = async (apiConfigId: string) => {
-  try {
-    const response = await getApiConfigPlugins(apiConfigId)
-    if (response.data && response.data.data) {
-      selectedPlugins.value = response.data.data.map((plugin: ApiPluginData) => plugin.id)
-    }
-  } catch (error) {
-    console.error('加载插件配置失败:', error)
-  }
-}
 
 // 在表单中添加字段映射
 const handleAddMappingInForm = () => {
@@ -675,21 +700,17 @@ const handleSubmit = async () => {
           fieldMappings: fieldMappings.map((m: ApiFieldMapping) => ({
             ...m,
             apiConfigId: formData.value.id || ''
-          }))
+          })),
+          pluginIds: selectedPlugins.value
         }
 
         if (isNewApi) {
-          // 新增API并保存字段映射
-          const response = await addApiWithMappings(completeData)
-          const newApiId = response.data.data
-          // 保存插件配置
-          await saveApiConfigPlugins(newApiId, selectedPlugins.value)
+          // 新增API并保存字段映射和插件配置
+          await addApiWithMappings(completeData)
           ElMessage.success('新增成功')
         } else {
-          // 更新API并保存字段映射
+          // 更新API并保存字段映射和插件配置
           await updateApiWithMappings(completeData)
-          // 保存插件配置
-          await saveApiConfigPlugins(formData.value.id as string, selectedPlugins.value)
           ElMessage.success('修改成功')
         }
         

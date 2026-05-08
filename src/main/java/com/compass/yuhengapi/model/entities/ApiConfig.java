@@ -2,6 +2,7 @@ package com.compass.yuhengapi.model.entities;
 
 import com.alibaba.fastjson2.JSON;
 import com.compass.yuhengapi.model.bean.SqlParam;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,7 +35,8 @@ public class ApiConfig {
 
     private String accountId;
 
-    @OneToMany(mappedBy = "apiConfig", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "apiConfig", fetch = FetchType.EAGER)
+    @JsonIgnoreProperties("apiConfig")
     private List<ApiConfigPlugin> plugins;
 
     public SqlParam getSqlParam() {

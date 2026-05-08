@@ -10,6 +10,7 @@ import com.compass.yuhengapi.common.util.PageList;
 import com.compass.yuhengapi.common.util.Result;
 import com.compass.yuhengapi.model.bean.ApiParam;
 import com.compass.yuhengapi.model.dto.ApiConfigQueryCmd;
+import com.compass.yuhengapi.model.dto.ApiConfigDetailDto;
 import com.compass.yuhengapi.model.entities.ApiConfig;
 import com.compass.yuhengapi.model.entities.ApiFieldMapping;
 import com.compass.yuhengapi.repo.ApiFieldMappingRepository;
@@ -47,20 +48,20 @@ public class ApiConfigController {
     }
 
     /**
-     * 新增API并保存字段映射
+     * 新增API并保存字段映射和插件配置
      */
     @PostMapping("/add-with-mappings")
     public Result<String> addWithMappings(@RequestBody com.compass.yuhengapi.model.dto.ApiConfigWithMappingsDto dto) {
-        String apiId = apiConfigService.addWithMappings(dto.getApiConfig(), dto.getFieldMappings());
+        String apiId = apiConfigService.addWithMappings(dto.getApiConfig(), dto.getFieldMappings(), dto.getPluginIds());
         return Result.success(apiId);
     }
 
     /**
-     * 更新API并保存字段映射
+     * 更新API并保存字段映射和插件配置
      */
     @PostMapping("/update-with-mappings")
     public Result<String> updateWithMappings(@RequestBody com.compass.yuhengapi.model.dto.ApiConfigWithMappingsDto dto) {
-        apiConfigService.updateWithMappings(dto.getApiConfig(), dto.getFieldMappings());
+        apiConfigService.updateWithMappings(dto.getApiConfig(), dto.getFieldMappings(), dto.getPluginIds());
         return Result.success("修改成功");
     }
 
@@ -77,6 +78,14 @@ public class ApiConfigController {
     @RequestMapping("/detail/{id}")
     public Result<ApiConfig> detail(@PathVariable("id") String id) {
         return Result.success(apiConfigService.detail(id));
+    }
+
+    /**
+     * 获取API详情，包括字段映射和插件配置
+     */
+    @RequestMapping("/detail-full/{id}")
+    public Result<ApiConfigDetailDto> detailFull(@PathVariable("id") String id) {
+        return Result.success(apiConfigService.getApiConfigDetail(id));
     }
 
     @RequestMapping("/delete/{id}")
