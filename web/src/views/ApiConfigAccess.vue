@@ -1,7 +1,7 @@
 <template>
   <div class="api-config-access-container">
     <PaginatedTable
-      title="API授权管理"
+      title="授权管理"
       :columns="columns"
       :search-fields="searchFields"
       :table-data="accessList"

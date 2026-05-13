@@ -36,7 +36,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/api',
     name: 'Api',
-    component: () => import('../views/Api.vue'),
+    component: () => import('../views/ApiConfig.vue'),
     meta: {
       title: 'API管理',
       icon: 'Connection'
@@ -45,9 +45,9 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/client',
     name: 'Client',
-    component: () => import('../views/Client.vue'),
+    component: () => import('../views/ApiClient.vue'),
     meta: {
-      title: '连接客户端管理',
+      title: '客户端管理',
       icon: 'Monitor'
     }
   },
@@ -56,7 +56,7 @@ const routes: RouteRecordRaw[] = [
     name: 'ApiConfigAccess',
     component: () => import('../views/ApiConfigAccess.vue'),
     meta: {
-      title: 'API授权管理',
+      title: '授权管理',
       icon: 'Key'
     }
   },
@@ -65,7 +65,7 @@ const routes: RouteRecordRaw[] = [
     name: 'ApiAccessLog',
     component: () => import('../views/ApiAccessLog.vue'),
     meta: {
-      title: 'API访问日志',
+      title: '日志管理',
       icon: 'Document'
     }
   }

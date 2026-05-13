@@ -12,7 +12,7 @@
           <el-descriptions-item label="版本">1.0.0</el-descriptions-item>
           <el-descriptions-item label="运行环境">开发环境</el-descriptions-item>
           <el-descriptions-item label="当前时间">{{ currentTime }}</el-descriptions-item>
-          <el-descriptions-item label="功能模块" :span="2">首页、数据源管理、API管理、连接客户端管理</el-descriptions-item>
+          <el-descriptions-item label="功能模块" :span="2">首页、数据源管理、API管理、客户端管理</el-descriptions-item>
         </el-descriptions>
       </div>
     </el-card>

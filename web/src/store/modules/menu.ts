@@ -33,7 +33,7 @@ export const useMenuStore = defineStore('menu', {
         path: '/client',
         name: 'Client',
         meta: {
-          title: '连接客户端管理',
+          title: '客户端管理',
           icon: Monitor
         }
       },
@@ -41,7 +41,7 @@ export const useMenuStore = defineStore('menu', {
         path: '/api-config-access',
         name: 'ApiConfigAccess',
         meta: {
-          title: 'API授权管理',
+          title: '授权管理',
           icon: Key
         }
       },

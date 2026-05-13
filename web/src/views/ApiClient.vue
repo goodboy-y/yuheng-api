@@ -1,7 +1,7 @@
 <template>
   <div class="client-container">
     <PaginatedTable
-      title="连接客户端管理"
+      title="客户端管理"
       :columns="columns"
       :search-fields="searchFields"
       :table-data="clientList"
@@ -68,7 +68,7 @@
     <!-- 授权管理弹窗 -->
     <el-dialog
       v-model="authDialogVisible"
-      title="API授权管理"
+      title="授权管理"
       width="800px"
     >
       <div class="auth-dialog">
