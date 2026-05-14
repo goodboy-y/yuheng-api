@@ -213,7 +213,7 @@ import { getApiList,
   type ApiData,
   type ApiSqlParam,
   type ApiFieldMapping,
-  type ApiConfigWithMappings } from '../api/api'
+  type ApiConfigWithMappings } from '../api/api-config'
 import { listDatasource, type Datasource } from '../api/datasource'
 import {
   getApiPluginList,

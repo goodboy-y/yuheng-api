@@ -68,7 +68,7 @@ import {
   type ApiConfigAccessData
 } from '../api/api-config-access'
 import { getClientList, type ClientData } from '../api/client'
-import { getApiList, type ApiData } from '../api/api'
+import { getApiList, type ApiData } from '../api/api-config'
 
 const columns = [
   { prop: 'clientName', label: '客户端名称', formatter: (row: ApiConfigAccessData) => row.client?.name || '-' },

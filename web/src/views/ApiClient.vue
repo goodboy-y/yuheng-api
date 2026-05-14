@@ -184,7 +184,7 @@ import {
 import {
   getUnauthorizedApis,
   type ApiData
-} from '../api/api'
+} from '../api/api-config'
 import {
   getApiConfigAccessList,
   grantAccess,
