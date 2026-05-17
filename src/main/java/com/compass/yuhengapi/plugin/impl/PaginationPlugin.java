@@ -98,10 +98,10 @@ public class PaginationPlugin implements Plugin {
         int endRow = startRow + pageSize - 1;
         
         String paginationSql = "SELECT * FROM (" +
-                              "  SELECT t.*, ROWNUM as rn FROM (" +
+                              "  SELECT t.*, ROWNUM as IGNORE_RN FROM (" +
                               sql +
                               ") t WHERE ROWNUM <= ?" +
-                              ") WHERE rn >= ?";
+                              ") WHERE IGNORE_RN >= ?";
         
         Object[] newParams = new Object[params.length + 2];
         System.arraycopy(params, 0, newParams, 0, params.length);

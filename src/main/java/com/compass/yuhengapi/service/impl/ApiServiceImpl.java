@@ -205,6 +205,9 @@ public class ApiServiceImpl implements ApiService {
             List<String> columns = new ArrayList<>();
             for (int i = 1; i <= columnCount; i++) {
                 String columnName = rs.getMetaData().getColumnLabel(i);
+                if ("IGNORE_RN".equals(columnName)){
+                    continue;
+                }
                 columns.add(columnName);
             }
             List<JSONObject> list = new ArrayList<>();
