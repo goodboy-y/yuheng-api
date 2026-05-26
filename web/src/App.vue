@@ -3,7 +3,8 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useMenuStore } from './store/modules/menu'
 import { useTabsStore } from './store/modules/tabs'
-import { ArrowLeft, ArrowRight, SwitchButton, User, Lock } from '@element-plus/icons-vue'
+import { useThemeStore, themes } from './store/modules/theme'
+import { ArrowLeft, ArrowRight, SwitchButton, User, Lock, Brush } from '@element-plus/icons-vue'
 import { removeToken } from './utils/auth'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -14,7 +15,24 @@ const icons = {
   ArrowRight,
   SwitchButton,
   User,
-  Lock
+  Lock,
+  Brush
+}
+
+const themeStore = useThemeStore()
+
+const currentTheme = computed(() => {
+  return themeStore.currentTheme
+})
+
+const currentThemeName = computed({
+  get: () => currentTheme.value.name,
+  set: (name: string) => handleThemeChange(name)
+})
+
+const handleThemeChange = (themeName: string) => {
+  themeStore.setTheme(themeName)
+  ElMessage.success('主题切换成功')
 }
 
 const handleLogout = async () => {
@@ -187,6 +205,10 @@ watch(
   { immediate: true }
 )
 
+watch(currentTheme, (theme) => {
+  document.documentElement.style.setProperty('--el-color-primary', theme.primaryColor)
+}, { immediate: true })
+
 onMounted(() => {
   tabsStore.addTab({
     path: '/home',
@@ -204,7 +226,7 @@ onUnmounted(() => {
 
 <template>
   <div class="app-container" :class="{ 'login-page': isLoginPage }">
-    <div v-if="!isLoginPage" class="sidebar" :class="{ 'sidebar-collapsed': menuStore.isCollapse }">
+    <div v-if="!isLoginPage" class="sidebar" :class="{ 'sidebar-collapsed': menuStore.isCollapse }" :style="{ background: currentTheme.gradient }">
       <div class="sidebar-header">
         <h1>API管理系统</h1>
         <el-button class="collapse-btn" @click="menuStore.toggleCollapse">
@@ -235,8 +257,21 @@ onUnmounted(() => {
       <div class="header">
         <div class="header-title">API接口管理系统</div>
         <div class="header-actions">
+          <el-select
+            v-model="currentThemeName"
+            size="small"
+            class="theme-select"
+            :style="{ '--theme-color': currentTheme.primaryColor }"
+          >
+            <el-option
+              v-for="theme in themes"
+              :key="theme.name"
+              :label="theme.label"
+              :value="theme.name"
+            />
+          </el-select>
           <el-dropdown @command="handlePasswordCommand">
-            <el-button type="primary" size="small">
+            <el-button size="small" class="theme-button" :style="{ backgroundColor: currentTheme.primaryColor, borderColor: currentTheme.primaryColor }">
               <el-icon><User /></el-icon>
               个人中心
               <el-icon><ArrowRight /></el-icon>
@@ -326,7 +361,6 @@ onUnmounted(() => {
 
 .sidebar {
   width: 200px;
-  background-color: #303133;
   color: #fff;
   transition: width 0.3s;
   display: flex;
@@ -394,7 +428,7 @@ onUnmounted(() => {
 }
 
 .el-menu-item.is-active {
-  background-color: #409EFF;
+  background-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 .sidebar-collapsed .el-menu-item {
@@ -423,6 +457,28 @@ onUnmounted(() => {
 .header-actions {
   display: flex;
   align-items: center;
+  gap: 12px;
+}
+
+.theme-select {
+  width: 100px;
+  border-radius: 4px;
+  border-color: #e4e7ed;
+}
+
+.theme-select:hover {
+  border-color: #409EFF;
+}
+
+.theme-button {
+  color: #fff;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.theme-button:hover {
+  opacity: 0.9;
+  color: #fff !important;
 }
 
 .tabs-container {
