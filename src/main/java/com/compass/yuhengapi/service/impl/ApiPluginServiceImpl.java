@@ -4,6 +4,7 @@ import com.compass.yuhengapi.model.entities.ApiConfig;
 import com.compass.yuhengapi.model.entities.ApiConfigPlugin;
 import com.compass.yuhengapi.model.entities.ApiPlugin;
 import com.compass.yuhengapi.plugin.Plugin;
+import com.compass.yuhengapi.plugin.impl.PaginationPlugin;
 import com.compass.yuhengapi.repo.ApiConfigPluginRepository;
 import com.compass.yuhengapi.repo.ApiConfigRepository;
 import com.compass.yuhengapi.repo.ApiPluginRepository;
@@ -32,7 +33,7 @@ public class ApiPluginServiceImpl implements ApiPluginService {
             ApiPlugin paginationPlugin = new ApiPlugin();
             paginationPlugin.setName("分页插件");
             paginationPlugin.setDescription("为API添加分页功能，自动处理page和pageSize参数，并返回分页信息");
-            paginationPlugin.setClassName("com.compass.yuhengapi.plugin.impl.PaginationPlugin");
+            paginationPlugin.setClassName(PaginationPlugin.class.getSimpleName());
             apiPluginRepository.save(paginationPlugin);
             log.info("初始化分页插件成功");
         }

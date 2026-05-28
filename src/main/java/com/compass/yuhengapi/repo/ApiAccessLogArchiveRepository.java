@@ -12,11 +12,6 @@ import java.time.LocalDateTime;
 @Repository
 public interface ApiAccessLogArchiveRepository
     extends JpaRepository<ApiAccessLogArchive, String>,
-            JpaSpecificationExecutor<ApiAccessLogArchive> {
+    JpaSpecificationExecutor<ApiAccessLogArchive> {
 
-    Page<ApiAccessLogArchive> findByAccessTimeBetween(LocalDateTime start, LocalDateTime end, Pageable pageable);
-
-    Page<ApiAccessLogArchive> findByPathContaining(String path, Pageable pageable);
-
-    Page<ApiAccessLogArchive> findByClientId(String clientId, Pageable pageable);
 }

@@ -18,12 +18,6 @@ public interface ApiAccessLogRepository
     extends JpaRepository<ApiAccessLog, String>,
             JpaSpecificationExecutor<ApiAccessLog> {
 
-    Page<ApiAccessLog> findByAccessTimeBetween(LocalDateTime start, LocalDateTime end, Pageable pageable);
-
-    Page<ApiAccessLog> findByPathContaining(String path, Pageable pageable);
-
-    Page<ApiAccessLog> findByClientId(String clientId, Pageable pageable);
-
     @Query("SELECT l FROM ApiAccessLog l WHERE l.accessTime < :beforeTime")
     Page<ApiAccessLog> findPageByAccessTimeBefore(@Param("beforeTime") LocalDateTime beforeTime, Pageable pageable);
 
