@@ -35,7 +35,8 @@ spring:
         spec: maximumSize=2000,expireAfterAccess=600s
 jwt:
   secret: "bGl1eXVpc2Fnb2Rib3k=" # 至少 32 字符
-  expiration: 3600000 # 1 小时
+  expiration: 1800000 # 半个小时
+  refresh-expiration: 86400000 # 24 小时
 
 #logging:
 #  level:

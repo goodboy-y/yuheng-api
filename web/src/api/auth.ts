@@ -6,7 +6,8 @@ export interface LoginData {
 }
 
 export interface LoginResponse {
-  token: string
+  accessToken: string
+  refreshToken: string
 }
 
 export interface ChangePasswordData {
@@ -14,8 +15,17 @@ export interface ChangePasswordData {
   newPassword: string
 }
 
+export interface RefreshTokenResponse {
+  accessToken: string
+  refreshToken: string
+}
+
 export const login = (data: LoginData) => {
   return request.post<{ code: number; message: string; data: LoginResponse }>('/auth/login', data)
+}
+
+export const refreshToken = (refreshToken: string) => {
+  return request.post<{ code: number; message: string; data: RefreshTokenResponse }>('/auth/refresh', { refreshToken })
 }
 
 export const logout = () => {

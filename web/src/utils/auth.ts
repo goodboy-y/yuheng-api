@@ -1,25 +1,44 @@
-const TOKEN_KEY = 'dbapi_token'
+const ACCESS_TOKEN_KEY = 'dbapi_access_token'
+const REFRESH_TOKEN_KEY = 'dbapi_refresh_token'
 
-export const getToken = (): string | null => {
-  const token = localStorage.getItem(TOKEN_KEY)
-  console.log('getToken - 从localStorage读取:', token)
-  return token
+export const getAccessToken = (): string | null => {
+  return localStorage.getItem(ACCESS_TOKEN_KEY)
 }
 
-export const setToken = (token: string): void => {
-  console.log('setToken - 准备保存token到localStorage:', token)
-  localStorage.setItem(TOKEN_KEY, token)
-  console.log('setToken - token已保存')
-  console.log('setToken - 验证保存结果:', localStorage.getItem(TOKEN_KEY))
+export const setAccessToken = (token: string): void => {
+  localStorage.setItem(ACCESS_TOKEN_KEY, token)
 }
 
-export const removeToken = (): void => {
-  console.log('removeToken - 删除token')
-  localStorage.removeItem(TOKEN_KEY)
+export const getRefreshToken = (): string | null => {
+  return localStorage.getItem(REFRESH_TOKEN_KEY)
+}
+
+export const setRefreshToken = (token: string): void => {
+  localStorage.setItem(REFRESH_TOKEN_KEY, token)
+}
+
+export const setTokens = (accessToken: string, refreshToken: string): void => {
+  setAccessToken(accessToken)
+  setRefreshToken(refreshToken)
+}
+
+export const removeTokens = (): void => {
+  localStorage.removeItem(ACCESS_TOKEN_KEY)
+  localStorage.removeItem(REFRESH_TOKEN_KEY)
 }
 
 export const isAuthenticated = (): boolean => {
-  const token = getToken()
-  console.log('isAuthenticated - 检查登录状态:', !!token)
-  return !!token
+  return !!getAccessToken()
+}
+
+export const getToken = (): string | null => {
+  return getAccessToken()
+}
+
+export const setToken = (token: string): void => {
+  setAccessToken(token)
+}
+
+export const removeToken = (): void => {
+  removeTokens()
 }

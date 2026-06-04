@@ -44,7 +44,7 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/auth/login", "/auth/logout", "/api/**", "/assets/**", "/").permitAll()
+                .requestMatchers("/auth/login", "/auth/logout", "/auth/refresh", "/api/**", "/assets/**", "/").permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(secretFilter(), UsernamePasswordAuthenticationFilter.class)

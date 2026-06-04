@@ -11,7 +11,8 @@
           <el-input v-model="loginForm.username" placeholder="请输入用户名" prefix-icon="User"></el-input>
         </el-form-item>
         <el-form-item label="密码" prop="password">
-          <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" prefix-icon="Lock" show-password></el-input>
+          <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" prefix-icon="Lock"
+            show-password></el-input>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="handleLogin" :loading="loading" style="width: 100%">登录</el-button>
@@ -27,7 +28,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { login } from '../api/auth'
-import { setToken, getToken } from '../utils/auth'
+import { setTokens } from '../utils/auth'
 
 const router = useRouter()
 const formRef = ref<FormInstance>()
@@ -45,42 +46,38 @@ const rules: FormRules = {
 
 const handleLogin = async () => {
   if (!formRef.value) return
-  
+
   await formRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true
       try {
         const response = await login(loginForm.value)
-        console.log('登录完整响应:', response)
-        console.log('response.data:', response.data)
-        
-        // 尝试多种可能的token路径
-        let token = response.data.data
-        
-        console.log('提取到的token:', token)
-        
-        if (!token) {
-          console.error('无法从响应中提取token，响应结构:', response.data)
+        const responseData = response.data
+        if (responseData.code !== 200) {
+          ElMessage.error(responseData.message || '登录失败')
+          return
+        }
+
+        const tokens = responseData.data as any
+
+        if (!tokens) {
           ElMessage.error('登录失败：无法获取token')
           return
         }
-        
-        // 提取token字符串
-        const tokenString = typeof token === 'string' ? token : token.token
-        
-        if (!tokenString) {
-          console.error('无法从响应中提取token字符串，响应结构:', response.data)
-          ElMessage.error('登录失败：无法获取token')
+
+        const accessToken = tokens.accessToken || tokens.token
+        const refreshToken = tokens.refreshToken
+
+        if (!accessToken) {
+          ElMessage.error('登录失败：无法获取accessToken')
           return
         }
-        
-        setToken(tokenString)
-        console.log('token已保存到localStorage:', getToken())
+
+        setTokens(accessToken, refreshToken || '')
         ElMessage.success('登录成功')
         router.push('/')
-      } catch (error) {
-        console.error('登录失败:', error)
-        ElMessage.error('登录失败，请检查用户名和密码')
+      } catch (error: any) {
+        ElMessage.error(error?.response?.data?.message || '登录失败，请检查用户名和密码')
       } finally {
         loading.value = false
       }

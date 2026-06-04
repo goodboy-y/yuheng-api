@@ -18,12 +18,16 @@ public class JwtUtil {
     @Value("${jwt.secret}")
     private String secret;
 
-    @Value("${jwt.expiration:3600000}")
+    @Value("${jwt.expiration:1800000}")
     private Long expiration;
+
+    @Value("${jwt.refresh-expiration:86400000}")
+    private Long refreshExpiration;
 
     public String generateToken(String username) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("username", username);
+        claims.put("type", "access");
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(username)
@@ -31,6 +35,38 @@ public class JwtUtil {
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(SignatureAlgorithm.HS512, secret)
                 .compact();
+    }
+
+    public String generateRefreshToken(String username) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("username", username);
+        claims.put("type", "refresh");
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + refreshExpiration))
+                .signWith(SignatureAlgorithm.HS512, secret)
+                .compact();
+    }
+
+    public boolean isTokenExpired(String token) {
+        Claims claims = parseToken(token);
+        if (claims == null) {
+            return true;
+        }
+        Date expirationDate = claims.getExpiration();
+        return expirationDate.before(new Date());
+    }
+
+    public boolean shouldRefresh(String token, int minutesBeforeExpire) {
+        Claims claims = parseToken(token);
+        if (claims == null) {
+            return true;
+        }
+        Date expirationDate = claims.getExpiration();
+        long timeUntilExpire = expirationDate.getTime() - System.currentTimeMillis();
+        return timeUntilExpire < minutesBeforeExpire * 60 * 1000L;
     }
 
     public Claims parseToken(String token) {
