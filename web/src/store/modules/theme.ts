@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 
+const THEME_STORAGE_KEY = 'dbapi_theme_name'
+
 export interface ThemeConfig {
   name: string
   label: string
@@ -60,15 +62,27 @@ export const themes: ThemeConfig[] = [
   }
 ]
 
+function getStoredTheme(): ThemeConfig {
+  const storedThemeName = localStorage.getItem(THEME_STORAGE_KEY)
+  if (storedThemeName) {
+    const theme = themes.find(t => t.name === storedThemeName)
+    if (theme) {
+      return theme
+    }
+  }
+  return themes[0]!
+}
+
 export const useThemeStore = defineStore('theme', {
   state: () => ({
-    currentTheme: themes[0] as ThemeConfig
+    currentTheme: getStoredTheme() as ThemeConfig
   }),
   actions: {
     setTheme(themeName: string) {
       const theme = themes.find(t => t.name === themeName)
       if (theme) {
         this.currentTheme = theme
+        localStorage.setItem(THEME_STORAGE_KEY, themeName)
       }
     },
     getThemeByName(name: string): ThemeConfig | undefined {
