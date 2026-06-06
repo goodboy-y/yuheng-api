@@ -17,7 +17,8 @@ const HOME_TAB: TabItem = {
 export const useTabsStore = defineStore('tabs', {
   state: () => ({
     tabsList: [HOME_TAB] as TabItem[],
-    activeTab: '/home'
+    activeTab: '/home',
+    refreshCounter: 0
   }),
   actions: {
     addTab(tab: TabItem) {
@@ -88,6 +89,17 @@ export const useTabsStore = defineStore('tabs', {
     },
     setActiveTab(path: string) {
       this.activeTab = path
+    },
+    refreshTab(tab: TabItem) {
+      const index = this.tabsList.findIndex(item => item.path === tab.path)
+      if (index > -1) {
+        // 在原来的位置替换标签，保持位置不变
+        this.tabsList.splice(index, 1, tab)
+        // 保持当前激活状态
+        this.activeTab = tab.path
+      }
+      // 增加刷新计数器，触发组件重新渲染
+      this.refreshCounter++
     }
   }
 })

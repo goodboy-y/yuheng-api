@@ -189,9 +189,8 @@ const handleRefresh = () => {
   if (currentTab.value) {
     const currentPath = currentTab.value.path
     contextMenuVisible.value = false
-    // 先移除当前标签，重新添加实现刷新
-    tabsStore.removeTab(currentPath)
-    tabsStore.addTab({
+    // 使用 refreshTab 保持标签位置不变并刷新页面
+    tabsStore.refreshTab({
       path: currentPath,
       name: currentTab.value.name,
       title: currentTab.value.title,
@@ -309,7 +308,7 @@ onUnmounted(() => {
     </div>
     <div v-if="!isLoginPage" class="main-content">
       <div class="header">
-        <div class="header-title">API接口管理系统</div>
+        <div class="header-title"></div>
         <div class="header-actions">
           <el-select
             v-model="currentThemeName"
@@ -367,7 +366,7 @@ onUnmounted(() => {
       <div class="content">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
-            <component :is="Component" />
+            <component :is="Component" :key="tabsStore.refreshCounter" />
           </transition>
         </router-view>
       </div>
