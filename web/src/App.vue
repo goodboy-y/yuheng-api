@@ -136,13 +136,67 @@ const handleMenuClick = (path: string, name: string, title: string) => {
   router.push(path)
 }
 
-const handleContextMenu = (event: MouseEvent, tab: any) => {
-  event.preventDefault()
-  currentTab.value = tab
-  contextMenuVisible.value = true
-  contextMenuPosition.value = {
-    x: event.clientX,
-    y: event.clientY
+const handleTabsContextMenu = (event: MouseEvent) => {
+  // 查找点击的 tab 元素
+  const target = event.target as HTMLElement
+  let tabElement = target.closest('.el-tabs__item')
+
+  if (tabElement) {
+    const tabName = (tabElement as HTMLElement).getAttribute('aria-controls')
+    const tab = tabsStore.tabsList.find(t => t.path === tabName || t.path === tabName?.replace('pane-', ''))
+    if (tab) {
+      currentTab.value = tab
+      contextMenuVisible.value = true
+      contextMenuPosition.value = {
+        x: event.clientX,
+        y: event.clientY
+      }
+    }
+  }
+}
+
+// 判断当前标签左侧是否有其他标签
+const hasLeftTabs = computed(() => {
+  if (!currentTab.value) return false
+  const index = tabsStore.tabsList.findIndex(item => item.path === currentTab.value.path)
+  return index > 0
+})
+
+// 判断当前标签右侧是否有其他标签
+const hasRightTabs = computed(() => {
+  if (!currentTab.value) return false
+  const index = tabsStore.tabsList.findIndex(item => item.path === currentTab.value.path)
+  return index < tabsStore.tabsList.length - 1
+})
+
+// 判断是否只有一个标签页
+const isOnlyOneTab = computed(() => {
+  return tabsStore.tabsList.length === 1
+})
+
+// 判断当前是否是首页
+const isHomeTab = computed(() => {
+  return currentTab.value?.path === '/home'
+})
+
+// 判断是否有其他标签页（除了当前和首页）
+const hasOtherTabs = computed(() => {
+  if (!currentTab.value) return false
+  return tabsStore.tabsList.length > 1
+})
+
+const handleRefresh = () => {
+  if (currentTab.value) {
+    const currentPath = currentTab.value.path
+    contextMenuVisible.value = false
+    // 先移除当前标签，重新添加实现刷新
+    tabsStore.removeTab(currentPath)
+    tabsStore.addTab({
+      path: currentPath,
+      name: currentTab.value.name,
+      title: currentTab.value.title,
+      component: currentTab.value.component
+    })
   }
 }
 
@@ -291,7 +345,7 @@ onUnmounted(() => {
           </el-dropdown>
         </div>
       </div>
-      <div class="tabs-container">
+      <div class="tabs-container" @contextmenu.prevent="handleTabsContextMenu">
         <el-tabs
           v-model="tabsStore.activeTab"
           class="demo-tabs"
@@ -306,7 +360,6 @@ onUnmounted(() => {
             :label="tab.title"
             :name="tab.path"
             :closable="tab.path !== '/home'"
-            @contextmenu="(event: MouseEvent) => handleContextMenu(event, tab)"
           >
           </el-tab-pane>
         </el-tabs>
@@ -324,10 +377,21 @@ onUnmounted(() => {
       class="context-menu"
       :style="{ left: contextMenuPosition.x + 'px', top: contextMenuPosition.y + 'px' }"
     >
-      <div class="context-menu-item" @click.stop="handleCloseCurrent">关闭当前页</div>
-      <div class="context-menu-item" @click.stop="handleCloseOther">关闭其他页签</div>
-      <div class="context-menu-item" @click.stop="handleCloseLeft">关闭左侧页签</div>
-      <div class="context-menu-item" @click.stop="handleCloseRight">关闭右侧页签</div>
+      <!-- 只有一个标签页时，只显示刷新 -->
+      <template v-if="isOnlyOneTab">
+        <div class="context-menu-item" @click.stop="handleRefresh">刷新页面</div>
+      </template>
+      <!-- 多个标签页时 -->
+      <template v-else>
+        <div class="context-menu-item" @click.stop="handleRefresh">刷新页面</div>
+        <template v-if="!isHomeTab">
+          <div class="context-menu-divider"></div>
+          <div class="context-menu-item" @click.stop="handleCloseCurrent">关闭当前</div>
+        </template>
+        <div v-if="hasLeftTabs" class="context-menu-item" @click.stop="handleCloseLeft">关闭左侧</div>
+        <div v-if="hasRightTabs" class="context-menu-item" @click.stop="handleCloseRight">关闭右侧</div>
+        <div v-if="hasOtherTabs && !isHomeTab" class="context-menu-item" @click.stop="handleCloseOther">关闭其他</div>
+      </template>
     </div>
 
     <el-dialog v-model="passwordDialogVisible" title="修改密码" width="450px" @close="handlePasswordDialogClose">
@@ -503,6 +567,12 @@ onUnmounted(() => {
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
   z-index: 9999;
   min-width: 120px;
+}
+
+.context-menu-divider {
+  height: 1px;
+  background-color: #e4e7ed;
+  margin: 4px 0;
 }
 
 .context-menu-item {
