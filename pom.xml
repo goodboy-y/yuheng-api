@@ -251,7 +251,7 @@
                 <configuration>
                     <mainClass>com.compass.yuhengapi.YuhengApiApplication</mainClass>
                     <buildArgs>
-                        <arg>--initialize-at-run-time=java.io.Console,java.io.ProxyingConsole</arg>
+                        <arg>--initialize-at-run-time=sun.security.util.Password$ConsoleHolder</arg>
                     </buildArgs>
                 </configuration>
             </plugin>
