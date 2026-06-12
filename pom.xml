@@ -250,6 +250,9 @@
                 <artifactId>native-maven-plugin</artifactId>
                 <configuration>
                     <mainClass>com.compass.yuhengapi.YuhengApiApplication</mainClass>
+                    <buildArgs>
+                        <arg>--initialize-at-build-time=java.io.ProxyingConsole</arg>
+                    </buildArgs>
                 </configuration>
             </plugin>
             <plugin>
