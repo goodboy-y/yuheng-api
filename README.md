@@ -1,19 +1,6 @@
 # 玉衡API
 
-将sql直接转换为api接口，支持mysql, oracle, postgresql, sqlite等等(使用JPA，JPA支持的数据库都支持)
-
-技术选型
-
-后端
-
-- springboot4
-- jpa
-
-前端
-
-- vue3
-- element-plus
-- vite
+将sql直接转换为api接口
 
 ## 环境要求
 
@@ -22,7 +9,7 @@ JDK17+
 ## 安装部署
 
 1.  docker 安装   
-   ```
+```shell
 docker run -d --name=yuheng-api\
   -p 8520:8520 \
   -e SERVER_PORT=8520 \
@@ -33,7 +20,7 @@ docker run -d --name=yuheng-api\
   -e SPRING_DATASOURCE_USERNAME=eams_dev \
   -e SPRING_DATASOURCE_PASSWORD=eams \
   yuhengapi:1.0
-  ```
+```
 2. jar包安装：略
 
 ## 如何使用
@@ -48,4 +35,11 @@ docker run -d --name=yuheng-api\
    ![](/doc/images/api-use.png)
    ![](/doc/images/api-use2.png)
 
+## 客户端
+
+[如何使用](./doc/usage.md)
+
 ## 如何贡献
+
+
+
