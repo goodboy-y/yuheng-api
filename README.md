@@ -201,7 +201,7 @@ npm run docs:dev
 
 ```shell
 # 克隆项目
-git clone <repository-url>
+git clone https://github.com/goodboy-y/yuheng-api.git
 cd yuheng-api
 
 # 配置数据库后启动
