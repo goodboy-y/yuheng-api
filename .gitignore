@@ -37,5 +37,7 @@ node_modules/
 .npm/
 .pnpm/
 .yarn/
+package-lock.json
 
 docs/.vitepress/cache
+docs/.vitepress/dist

@@ -93,7 +93,7 @@ export default defineConfig({
     },
 
     footer: {
-      message: '基于 MIT License 发布',
+      message: '基于 Apache License 2.0 发布',
       copyright: 'Copyright © 2024 玉衡API',
     },
   },

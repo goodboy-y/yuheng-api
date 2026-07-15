@@ -163,4 +163,4 @@ public class MyPlugin implements Plugin {
 
 ## 许可证
 
-本项目基于 MIT License 发布。详见 [LICENSE](https://github.com/your-org/yuheng-api/blob/main/LICENSE)。
+本项目基于 [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) 发布。

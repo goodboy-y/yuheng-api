@@ -16,6 +16,23 @@
         </el-descriptions>
       </div>
     </el-card>
+
+    <el-card shadow="hover" style="margin-top: 20px">
+      <template #header>
+        <div class="card-header">
+          <span>项目文档</span>
+        </div>
+      </template>
+      <div class="system-info">
+        <el-descriptions :column="1" border>
+          <el-descriptions-item label="文档地址">
+            <el-link type="primary" href="https://goodboy-y.github.io/yuheng-api/" target="_blank">
+              https://goodboy-y.github.io/yuheng-api/
+            </el-link>
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+    </el-card>
   </div>
 </template>
 
