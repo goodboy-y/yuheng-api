@@ -37,3 +37,5 @@ node_modules/
 .npm/
 .pnpm/
 .yarn/
+
+docs/.vitepress/cache
