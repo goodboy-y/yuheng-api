@@ -4,7 +4,7 @@ export default defineConfig({
   title: '玉衡API',
   description: '将SQL直接转换为API接口的低代码平台',
   lang: 'zh-CN',
-  base: '/yuheng-api-doc/',
+  base: '/yuheng-api/',
   lastUpdated: true,
 
   head: [
