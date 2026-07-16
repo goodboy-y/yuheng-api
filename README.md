@@ -16,6 +16,21 @@
 
 ## 快速开始
 
+### Docker部署（推荐）
+
+```shell
+docker run -d --name=yuheng-api \
+  -p 8520:8520 \
+  -e SERVER_PORT=8520 \
+  -e CONTEXT_PATH=/yuheng-api \
+  -e SPRING_REDIS_HOST=your-redis-host \
+  -e SPRING_REDIS_PASSWORD='your-redis-password' \
+  -e SPRING_DATASOURCE_URL='jdbc:oracle:thin:@172.17.0.1:1521/orclpdb1' \
+  -e SPRING_DATASOURCE_USERNAME=your-db-username \
+  -e SPRING_DATASOURCE_PASSWORD=your-db-password \
+  registry.cn-hangzhou.aliyuncs.com/tianxuan/yuheng:latest
+```
+
 ### Jar 包部署
 
 ```shell

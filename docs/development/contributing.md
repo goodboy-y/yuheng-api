@@ -9,13 +9,13 @@
 - JDK 21+
 - Maven 3.6+
 - MySQL 8.0+ 或 Oracle 12c+
-- Redis（可选）
+- Redis
 - IDE（推荐 IntelliJ IDEA）
 
 ### 克隆项目
 
 ```shell
-git clone <repository-url>
+git clone https://github.com/goodboy-y/yuheng-api
 cd yuheng-api
 ```
 

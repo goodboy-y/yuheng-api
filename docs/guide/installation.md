@@ -12,7 +12,7 @@ docker run -d --name=yuheng-api \
   -e SPRING_DATASOURCE_URL='jdbc:oracle:thin:@172.17.0.1:1521/orclpdb1' \
   -e SPRING_DATASOURCE_USERNAME=your-db-username \
   -e SPRING_DATASOURCE_PASSWORD=your-db-password \
-  yuhengapi:1.0
+  registry.cn-hangzhou.aliyuncs.com/tianxuan/yuheng:latest
 ```
 
 ### 环境变量说明
@@ -35,7 +35,7 @@ docker run -d --name=yuheng-api \
 version: '3.8'
 services:
   yuheng-api:
-    image: yuhengapi:1.0
+    image: registry.cn-hangzhou.aliyuncs.com/tianxuan/yuheng:latest
     container_name: yuheng-api
     ports:
       - '8520:8520'
