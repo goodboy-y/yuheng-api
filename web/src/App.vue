@@ -281,7 +281,7 @@ onUnmounted(() => {
   <div class="app-container" :class="{ 'login-page': isLoginPage }">
     <div v-if="!isLoginPage" class="sidebar" :class="{ 'sidebar-collapsed': menuStore.isCollapse }" :style="{ background: currentTheme.gradient }">
       <div class="sidebar-header">
-        <h1>API管理系统</h1>
+        <h1>玉衡API</h1>
         <el-button class="collapse-btn" @click="menuStore.toggleCollapse">
           <el-icon :size="20">
             <component :is="menuStore.isCollapse ? icons.ArrowRight : icons.ArrowLeft" />
