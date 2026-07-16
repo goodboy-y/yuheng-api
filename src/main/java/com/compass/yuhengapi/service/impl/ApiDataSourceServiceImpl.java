@@ -36,6 +36,12 @@ public class ApiDataSourceServiceImpl implements ApiDataSourceService {
     @Transactional
     @Override
     public void update(ApiDatasource dataSource) {
+        // 密码为空则使用原来的密码
+        if (StringUtils.isBlank(dataSource.getPassword())) {
+            apiDataSourceRepository.findById(dataSource.getId()).ifPresent(existing -> {
+                dataSource.setPassword(existing.getPassword());
+            });
+        }
         // 注销旧的连接池
         com.compass.yuhengapi.util.PoolManager.removePool(dataSource.getId());
         apiDataSourceRepository.save(dataSource);

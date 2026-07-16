@@ -301,7 +301,7 @@ onUnmounted(() => {
             :index="menu.path"
           >
             <el-icon><component :is="menu.meta.icon" /></el-icon>
-            <template #title>{{ menu.meta.title }}</template>
+            <template #title><span class="menu-title">{{ menu.meta.title }}</span></template>
           </el-menu-item>
         </el-menu>
       </div>
@@ -488,6 +488,13 @@ onUnmounted(() => {
 
 .el-menu-item {
   color: #fff;
+}
+
+.menu-title {
+  display: inline-block;
+  width: 6em;
+  text-align: justify;
+  text-align-last: justify;
 }
 
 .el-menu-item.is-active {

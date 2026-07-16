@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import PaginatedTable from '../components/PaginatedTable.vue'
@@ -153,13 +153,15 @@ const detailData = ref<Datasource>({
   type: ''
 })
 
-const rules: FormRules = {
+const rules = computed<FormRules>(() => ({
   name: [{ required: true, message: '请输入数据源名称', trigger: 'blur' }],
   type: [{ required: true, message: '请选择类型', trigger: 'change' }],
   url: [{ required: true, message: '请输入URL', trigger: 'blur' }],
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
-}
+  password: formData.value.id
+    ? []
+    : [{ required: true, message: '请输入密码', trigger: 'blur' }]
+}))
 
 const fetchList = async (params?: Record<string, any>) => {
   loading.value = true
@@ -226,9 +228,10 @@ const handleEdit = async (row: Datasource) => {
     console.log('开始获取数据源详情，ID:', row.id)
     const response = await getDatasourceDetail(row.id)
     console.log('API响应:', response)
-    
+
     if (response.data && response.data.data) {
       formData.value = response.data.data
+      formData.value.password = ''  // 密码清空，不返回原密码，为空则代表使用原来的密码
       dialogTitle.value = '修改数据源'
       dialogVisible.value = true
     } else {

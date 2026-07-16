@@ -1,5 +1,6 @@
 package com.compass.yuhengapi.model.entities;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,6 +19,7 @@ public class ApiDatasource {
     private String note;
     private String url;
     private String username;
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     private String type;
     private String accountId;
