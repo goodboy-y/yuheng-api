@@ -25,9 +25,10 @@ docker run -d --name=yuheng-api \
   -e CONTEXT_PATH=/yuheng-api \
   -e SPRING_REDIS_HOST=your-redis-host \
   -e SPRING_REDIS_PASSWORD='your-redis-password' \
-  -e SPRING_DATASOURCE_URL='jdbc:oracle:thin:@172.17.0.1:1521/orclpdb1' \
+  -e SPRING_DATASOURCE_URL='jdbc:mysql://titi.vip:3306/yuheng?characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2B8&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true' \
   -e SPRING_DATASOURCE_USERNAME=your-db-username \
   -e SPRING_DATASOURCE_PASSWORD=your-db-password \
+  -e SPRING_DATASOURCE_DRIVER_CLASS_NAME=com.mysql.cj.jdbc.Driver \
   registry.cn-hangzhou.aliyuncs.com/tianxuan/yuheng:latest
 ```
 

@@ -9,17 +9,18 @@ spring:
     redis:
       host: ${SPRING_REDIS_HOST:xixi.vip}
       password: ${SPRING_REDIS_PASSWORD:xixiRedisMima1996!}
-  #  datasource:
-  #    driver-class-name: com.mysql.cj.jdbc.Driver
-  #    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://titi.vip:3306/gateway?characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2B8&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true}
-  #    username: ${SPRING_DATASOURCE_USERNAME:root}
-  #    password: ${SPRING_DATASOURCE_PASSWORD:123456}
   datasource:
-    type: com.alibaba.druid.pool.DruidDataSource
-    url: ${SPRING_DATASOURCE_URL:jdbc:oracle:thin:@172.17.0.1:1521/orclpdb1}
-    username: ${SPRING_DATASOURCE_USERNAME:eams_dev}
-    password: ${SPRING_DATASOURCE_PASSWORD:eams}
-    driver-class-name: oracle.jdbc.OracleDriver
+      type: com.alibaba.druid.pool.DruidDataSource
+      driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:com.mysql.cj.jdbc.Driver}
+      url: ${SPRING_DATASOURCE_URL:jdbc:mysql://titi.vip:3306/yuheng?characterEncoding=utf-8&useSSL=false&serverTimezone=GMT%2B8&rewriteBatchedStatements=true&allowPublicKeyRetrieval=true}
+      username: ${SPRING_DATASOURCE_USERNAME:root}
+      password: ${SPRING_DATASOURCE_PASSWORD:123456}
+#  datasource:
+#    type: com.alibaba.druid.pool.DruidDataSource
+#    url: ${SPRING_DATASOURCE_URL:jdbc:oracle:thin:@172.17.0.1:1521/orclpdb1}
+#    username: ${SPRING_DATASOURCE_USERNAME:eams_dev}
+#    password: ${SPRING_DATASOURCE_PASSWORD:eams}
+#    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:oracle.jdbc.OracleDriver}
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
