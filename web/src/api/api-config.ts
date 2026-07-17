@@ -6,11 +6,6 @@ export interface ApiSqlParam {
   type: string
 }
 
-export interface SqlParam {
-  sql: string
-  params: ApiSqlParam[]
-}
-
 export interface ApiData {
   id: string
   name: string
@@ -21,7 +16,10 @@ export interface ApiData {
     name: string
   }
   datasourceId: string
-  sqlParam: SqlParam
+  sqlParam: {
+    sql: string
+    params: ApiSqlParam[]
+  }
   status: number
   plugins?: Array<{
     apiPlugin: {
@@ -40,20 +38,8 @@ export const getApiList = (page: number = 0, pageSize: number = 20, params: Reco
   })
 }
 
-export const addApi = (data: Omit<ApiData, 'id'>) => {
-  return request.post<ApiResponse<any>>('/apiConfig/add', data)
-}
-
 export const deleteApi = (id: string) => {
   return request.delete<ApiResponse<any>>(`/apiConfig/delete/${id}`)
-}
-
-export const getApiDetail = (id: string) => {
-  return request.get<ApiResponse<ApiData>>(`/apiConfig/detail/${id}`)
-}
-
-export const updateApi = (data: ApiData) => {
-  return request.put<ApiResponse<any>>('/apiConfig/update', data)
 }
 
 export const testApi = (apiId: string, params: Record<string, any>) => {
@@ -74,14 +60,6 @@ export interface ApiFieldMapping {
   columnWidth?: number
 }
 
-export const getFieldMappings = (apiConfigId: string) => {
-  return request.get<ApiResponse<ApiFieldMapping[]>>(`/apiConfig/field-mapping/${apiConfigId}`)
-}
-
-export const saveFieldMappings = (apiConfigId: string, mappings: ApiFieldMapping[]) => {
-  return request.post<ApiResponse<any>>(`/apiConfig/field-mapping/${apiConfigId}`, mappings)
-}
-
 export interface ApiConfigWithMappings {
   apiConfig: ApiData
   fieldMappings: ApiFieldMapping[]
@@ -89,11 +67,11 @@ export interface ApiConfigWithMappings {
 }
 
 export const addApiWithMappings = (data: ApiConfigWithMappings) => {
-  return request.post<ApiResponse<string>>('/apiConfig/add-with-mappings', data)
+  return request.post<ApiResponse<string>>('/apiConfig/add', data)
 }
 
 export const updateApiWithMappings = (data: ApiConfigWithMappings) => {
-  return request.post<ApiResponse<string>>('/apiConfig/update-with-mappings', data)
+  return request.post<ApiResponse<string>>('/apiConfig/update', data)
 }
 
 export const getApiDetailFull = (apiId: string) => {

@@ -106,7 +106,7 @@ byte[] excelBytes = ExcelUtils.exportExcelWithHeaders(
 字段映射与 API 配置绑定，在创建或更新 API 时一同提交：
 
 ```http
-POST /apiConfig/add-with-mappings
+POST /apiConfig/add
 Content-Type: application/json
 
 {

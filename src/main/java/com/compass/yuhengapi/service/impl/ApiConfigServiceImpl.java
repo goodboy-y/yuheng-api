@@ -76,11 +76,6 @@ public class ApiConfigServiceImpl implements ApiConfigService {
         return params;
     }
 
-    @Override
-    public List<ApiParam> getRequestParam(String sql) {
-        return getApiParams(sql);
-    }
-
     @Transactional
     public void delete(String id) {
         apiConfigRepository.deleteById(id);
@@ -113,26 +108,6 @@ public class ApiConfigServiceImpl implements ApiConfigService {
     @Override
     public ApiConfig getConfig(String path) {
         return apiConfigRepository.selectByPath(path);
-    }
-
-    @Override
-    public void online(String id) {
-        ApiConfig apiConfig = apiConfigRepository.findById(id).orElse(null);
-        if (apiConfig == null) {
-            return;
-        }
-        apiConfig.setStatus(1);
-        apiConfigRepository.save(apiConfig);
-    }
-
-    @Override
-    public void offline(String id) {
-        ApiConfig apiConfig = apiConfigRepository.findById(id).orElse(null);
-        if (apiConfig == null) {
-            return;
-        }
-        apiConfig.setStatus(0);
-        apiConfigRepository.save(apiConfig);
     }
 
     @Transactional

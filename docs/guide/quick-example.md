@@ -51,7 +51,7 @@ Content-Type: application/json
 **请求：**
 
 ```http
-POST /apiConfig/add-with-mappings
+POST /apiConfig/add
 Content-Type: application/json
 
 {

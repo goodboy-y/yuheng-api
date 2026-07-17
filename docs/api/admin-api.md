@@ -72,20 +72,15 @@ Authorization: Bearer <accessToken>
 | 方法 | 路径                              | 说明                   | 认证 |
 | ---- | --------------------------------- | ---------------------- | ---- |
 | GET  | `/apiConfig/search`               | 分页查询 API 配置       | JWT  |
-| POST | `/apiConfig/add-with-mappings`    | 创建 API（含映射和插件） | JWT  |
-| POST | `/apiConfig/update-with-mappings` | 更新 API（含映射和插件） | JWT  |
+| POST | `/apiConfig/add`    | 创建 API（含映射和插件） | JWT  |
+| POST | `/apiConfig/update` | 更新 API（含映射和插件） | JWT  |
 | GET  | `/apiConfig/detail/{id}`          | 查看 API 详情          | JWT  |
 | GET  | `/apiConfig/detail-full/{id}`     | 查看 API 完整详情      | JWT  |
 | GET  | `/apiConfig/delete/{id}`          | 删除 API              | JWT  |
-| GET  | `/apiConfig/online/{id}`          | 上线 API              | JWT  |
-| GET  | `/apiConfig/offline/{id}`         | 下线 API              | JWT  |
-| GET  | `/apiConfig/parse-param`          | 解析 SQL 参数          | JWT  |
 | GET  | `/apiConfig/parse-sql-fields`     | 解析 SQL 返回字段       | JWT  |
 | GET  | `/apiConfig/unauthorized`         | 查询客户端未授权 API    | JWT  |
 | POST | `/apiConfig/test/{apiId}`         | 测试 API               | JWT  |
 | POST | `/apiConfig/export/{apiId}`       | 导出 API 测试数据       | JWT  |
-| GET  | `/apiConfig/get-base-url`         | 获取服务基础 URL        | JWT  |
-| GET  | `/apiConfig/remote-request`       | 代理远程请求            | JWT  |
 
 ---
 

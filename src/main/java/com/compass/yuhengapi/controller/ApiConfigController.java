@@ -1,14 +1,10 @@
 package com.compass.yuhengapi.controller;
 
 
-import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson2.JSON;
-import com.alibaba.fastjson2.JSONObject;
 import com.compass.yuhengapi.common.util.ExcelUtils;
-import com.compass.yuhengapi.common.util.IpUtils;
 import com.compass.yuhengapi.common.util.PageList;
 import com.compass.yuhengapi.common.util.Result;
-import com.compass.yuhengapi.model.bean.ApiParam;
 import com.compass.yuhengapi.model.dto.ApiConfigQueryCmd;
 import com.compass.yuhengapi.model.dto.ApiConfigDetailDto;
 import com.compass.yuhengapi.model.entities.ApiConfig;
@@ -19,7 +15,6 @@ import com.compass.yuhengapi.service.ApiService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -50,7 +45,7 @@ public class ApiConfigController {
     /**
      * 新增API并保存字段映射和插件配置
      */
-    @PostMapping("/add-with-mappings")
+    @PostMapping("/add")
     public Result<String> addWithMappings(@RequestBody com.compass.yuhengapi.model.dto.ApiConfigWithMappingsDto dto) {
         String apiId = apiConfigService.addWithMappings(dto.getApiConfig(), dto.getFieldMappings(), dto.getPluginIds());
         return Result.success(apiId);
@@ -59,15 +54,10 @@ public class ApiConfigController {
     /**
      * 更新API并保存字段映射和插件配置
      */
-    @PostMapping("/update-with-mappings")
+    @PostMapping("/update")
     public Result<String> updateWithMappings(@RequestBody com.compass.yuhengapi.model.dto.ApiConfigWithMappingsDto dto) {
         apiConfigService.updateWithMappings(dto.getApiConfig(), dto.getFieldMappings(), dto.getPluginIds());
         return Result.success("修改成功");
-    }
-
-    @RequestMapping("/parse-param")
-    public Result<List<ApiParam>> parseParam(String sql) {
-        return Result.success(apiConfigService.getRequestParam(sql));
     }
 
     @RequestMapping("/parse-sql-fields")
@@ -94,36 +84,9 @@ public class ApiConfigController {
         return Result.success("删除成功");
     }
 
-    @RequestMapping("/online/{id}")
-    public void online(@PathVariable("id") String id) {
-        apiConfigService.online(id);
-    }
-
-    @RequestMapping("/offline/{id}")
-    public void offline(@PathVariable("id") String id) {
-        apiConfigService.offline(id);
-    }
-
-    @Value("${server.port}")
-    private String port;
-
-    @RequestMapping("/get-base-url")
-    public String getBaseUrl() {
-        String hostIp = IpUtils.getHostIp();
-        return hostIp + ":" + port;
-    }
-
     @RequestMapping("/unauthorized")
     public Result<PageList<ApiConfig>> getUnAuthorizedApiConfigs(@RequestParam String clientId, @RequestParam(defaultValue = "0") int pageNum, @RequestParam(defaultValue = "20") int pageSize, @RequestParam(required = false) String name) {
         return Result.success(apiConfigService.getUnAuthorizedApiConfigs(clientId, pageNum, pageSize, name));
-    }
-
-    @SuppressWarnings("all")
-    @RequestMapping("/remote-request")
-    public JSONObject request(String url, String params) {
-        Map<String, Object> map = JSON.parseObject(params, Map.class);
-        String post = HttpUtil.post(url, map);
-        return JSON.parseObject(post);
     }
 
     /**

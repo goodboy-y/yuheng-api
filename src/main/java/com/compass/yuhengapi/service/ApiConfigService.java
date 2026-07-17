@@ -1,7 +1,6 @@
 package com.compass.yuhengapi.service;
 
 import com.compass.yuhengapi.common.util.PageList;
-import com.compass.yuhengapi.model.bean.ApiParam;
 import com.compass.yuhengapi.model.dto.ApiConfigDetailDto;
 import com.compass.yuhengapi.model.dto.ApiConfigQueryCmd;
 import com.compass.yuhengapi.model.entities.ApiConfig;
@@ -17,13 +16,7 @@ public interface ApiConfigService {
 
     PageList<ApiConfig> search(ApiConfigQueryCmd queryCmd);
 
-    void online(String id);
-
-    void offline(String id);
-
     ApiConfig getConfig(String path);
-
-    List<ApiParam> getRequestParam(String sql);
 
     /**
      * 新增API并保存字段映射和插件配置

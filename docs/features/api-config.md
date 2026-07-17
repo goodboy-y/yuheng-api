@@ -67,7 +67,7 @@ GET /apiConfig/search?pageNum=0&pageSize=20&name=<关键字>
 ### 创建 API（含字段映射和插件）
 
 ```http
-POST /apiConfig/add-with-mappings
+POST /apiConfig/add
 Content-Type: application/json
 
 {
@@ -92,7 +92,7 @@ Content-Type: application/json
 ### 更新 API
 
 ```http
-POST /apiConfig/update-with-mappings
+POST /apiConfig/update
 Content-Type: application/json
 
 {
@@ -116,41 +116,10 @@ GET /apiConfig/detail-full/{id}
 
 响应包含 API 配置、字段映射列表和插件配置。
 
-### API 上/下线
-
-```http
-# 上线
-GET /apiConfig/online/{id}
-
-# 下线
-GET /apiConfig/offline/{id}
-```
-
-下线的 API 将无法通过 `/api/{path}` 访问。
-
 ### 删除 API
 
 ```http
 GET /apiConfig/delete/{id}
-```
-
-### 解析 SQL 参数
-
-在创建 API 前，可以预览 SQL 中的参数：
-
-```http
-GET /apiConfig/parse-param?sql=SELECT * FROM person WHERE dept = #{dept}
-```
-
-响应：
-
-```json
-{
-  "code": 200,
-  "data": [
-    { "name": "dept", "type": "string" }
-  ]
-}
 ```
 
 ### 解析 SQL 字段

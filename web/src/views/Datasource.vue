@@ -247,20 +247,13 @@ const handleEdit = async (row: Datasource) => {
 const handleTest = async (row: Datasource) => {
   testLoading.value = true
   try {
-    // 获取数据源详情
-    const response = await getDatasourceDetail(row.id)
-    if (response.data) {
-      const datasource = response.data.data
-      // 测试连接
-      const testResponse = await testDatasourceConnection(datasource)
-      console.log('测试连接响应:', testResponse)
-      if (testResponse.data && testResponse.data.code === 200) {
-        ElMessage.success(testResponse.data.data || '测试连接成功')
-      } else {
-        ElMessage.error(testResponse.data.message || '测试连接失败')
-      }
+    // 列表测试：仅传入id，后台查询数据后测试
+    const testResponse = await testDatasourceConnection({ id: row.id })
+    console.log('测试连接响应:', testResponse)
+    if (testResponse.data && testResponse.data.code === 200) {
+      ElMessage.success(testResponse.data.data || '测试连接成功')
     } else {
-      ElMessage.error('获取数据源信息失败')
+      ElMessage.error(testResponse.data.message || '测试连接失败')
     }
   } catch (error: any) {
     console.error('测试连接失败:', error)
