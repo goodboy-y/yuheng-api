@@ -11,6 +11,8 @@
     "docs:deploy": "vitepress build docs"
   },
   "devDependencies": {
-    "vitepress": "^1.6.3"
+    "mermaid": "^11.16.0",
+    "vitepress": "^1.6.3",
+    "vitepress-mermaid-plugin": "^3.0.0"
   }
 }

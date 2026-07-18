@@ -1,6 +1,8 @@
-import { defineConfig } from 'vitepress'
+// import { defineConfig } from 'vitepress'
+import { withMermaid } from 'vitepress-mermaid-plugin'
 
-export default defineConfig({
+
+export default withMermaid({
   title: '玉衡API',
   description: '将SQL直接转换为API接口的低代码平台',
   lang: 'zh-CN',
